@@ -92,13 +92,6 @@ int main(int argc, char *argv[])
                     VerticesEdj[tmp[1]].push_back(tmp[4]);
                 }
             }
-            vector<int>::iterator iter;
-            iter = VerticesEdj[2].begin();
-                while (iter != VerticesEdj[2].end())
-                {
-                  cout << *iter << endl;
-                  iter++;
-                }
         }
         else
         {
