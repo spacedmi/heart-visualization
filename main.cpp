@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
         cout << "Some Metis error" << endl;
         break;
     }
-    cout << vertNum << endl << VertFileName;
+    cout << "Total " << vertNum << " vertices" << endl;
 
     // Recorfding each part to .XYZ file
     for (int i = 0; i < cutNum; i++)
@@ -207,8 +207,7 @@ int main(int argc, char *argv[])
             }
         }
         outFile.close();
-
+        cout << i << " Part: " << Number << " vertices" << endl;
     }
-
     return 0;
  }
