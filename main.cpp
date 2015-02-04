@@ -1,6 +1,7 @@
 
 // Heart's mesh partition
 // Using Metis
+// Run command example: ./mesh-partition heart.node heart.ele 2
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -209,5 +210,35 @@ int main(int argc, char *argv[])
         outFile.close();
         cout << i << " Part: " << Number << " vertices" << endl;
     }
+
+    // Data capture
+    int relationNum = 0, relationClusterNum = 0;
+    int *relationClusterNumArr = new int[cutNum];
+    for (int i = 0; i < vertNum; i++)
+    {
+        // Elements of relationClusterNumArr will be null
+        for (int j = 0; j < cutNum; j++)
+            relationClusterNumArr[j] = 0;
+
+        iter = VerticesEdj[i].begin();
+            while (iter != VerticesEdj[i].end())
+            {
+                if (part[i] != part[*iter])
+                {
+                    relationNum++;
+                    relationClusterNumArr[part[*iter]] = 1;
+                }
+                iter++;
+            }
+
+         // Computing relationClusterNum in relationClusterNumArr
+        for (int j = 0; j < cutNum; j++)
+            if (relationClusterNumArr[j] == 1)
+                relationClusterNum++;
+    }
+    delete[] relationClusterNumArr;
+    // Output data capture results
+    cout << "relationNum = " << relationNum << " relationClusterNum = " << relationClusterNum << endl;
+
     return 0;
  }
