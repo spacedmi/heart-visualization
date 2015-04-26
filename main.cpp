@@ -10,6 +10,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <time.h>
 
 using namespace std;
 
@@ -171,8 +172,12 @@ int main(int argc, char *argv[])
                 }
             }
     }
-    int Result = METIS_PartGraphRecursive(&nvtxs, &ncon, xadj, adjncy, NULL, NULL, NULL, &nparts,
+
+    unsigned int time = clock();
+    int Result = METIS_PartGraphKway(&nvtxs, &ncon, xadj, adjncy, NULL, NULL, NULL, &nparts,
                                           NULL, NULL, NULL, &objval, part);
+    time = clock() - time;
+
     // Graph partition
     switch (Result)
     {
@@ -211,15 +216,21 @@ int main(int argc, char *argv[])
         cout << i << " Part: " << Number << " vertices" << endl;
     }
 
+    // Recording all vertices to file
+    ofstream outF;
+    outF.open(string("PartFile.txt"), ios_base::out);
+    outF << vertNum << endl;
+    for (int i = 0; i < vertNum; i++)
+    {
+        outF << part[i] << " " << i << endl;
+    }
+    outF.close();
+
     // Data capture
     int relationNum = 0, relationClusterNum = 0;
     int *relationClusterNumArr = new int[cutNum];
     for (int i = 0; i < vertNum; i++)
     {
-        // Elements of relationClusterNumArr will be null
-        for (int j = 0; j < cutNum; j++)
-            relationClusterNumArr[j] = 0;
-
         iter = VerticesEdj[i].begin();
             while (iter != VerticesEdj[i].end())
             {
@@ -230,15 +241,38 @@ int main(int argc, char *argv[])
                 }
                 iter++;
             }
-
-         // Computing relationClusterNum in relationClusterNumArr
+    }
+    for (int i = 0; i < cutNum; i++)
+    {
+        // Elements of relationClusterNumArr will be null
         for (int j = 0; j < cutNum; j++)
-            if (relationClusterNumArr[j] == 1)
-                relationClusterNum++;
+            relationClusterNumArr[j] = 0;
+
+        for (int j = 0; j < vertNum; j++)
+        {
+            if (part[j] == i)
+            {
+                iter = VerticesEdj[j].begin();
+                    while (iter != VerticesEdj[j].end())
+                    {
+                        if (part[j] != part[*iter])
+                        {
+                            relationClusterNumArr[part[*iter]] = 1;
+                        }
+                        iter++;
+                    }
+            }
+        }
+
+       // Computing relationClusterNum in relationClusterNumArr
+       for (int j = 0; j < cutNum; j++)
+           if (relationClusterNumArr[j] == 1)
+               relationClusterNum++;
     }
     delete[] relationClusterNumArr;
     // Output data capture results
     cout << "relationNum = " << relationNum << " relationClusterNum = " << relationClusterNum << endl;
+    cout << "Work time:" << time << endl;
 
     return 0;
  }
