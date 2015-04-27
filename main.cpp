@@ -1,6 +1,6 @@
 // Heart's mesh partition
 // Using Metis
-// Run command example: ./mesh-partition heart.node heart.ele 2 1
+// Run command example: ./mesh-partition heart.node heart.ele 2 1 1
 // Algorithms:
 // 1 - PartGraphRecursive
 // 2 - PartGraphKway
