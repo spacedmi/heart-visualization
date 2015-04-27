@@ -19,8 +19,24 @@ bool FindEl(vector<int> Vert, int Elem)
     return false;
 }
 
-int mesh_partition(const char *VertFileName, const char *TetrFileName, const int cutNum, const int algorithm = 1)
+int mesh_partition(const char* VertFileName, const char* TetrFileName, const int cutNum,
+                   const int algorithm = 1, const int weighted = 0)
 {
+    if (cutNum < 1)
+    {
+        cerr << "Cut number must be wore than 0 " << VertFileName << endl;
+        return -1;
+    }
+    if ((algorithm < 1) || (algorithm > 2))
+    {
+        cerr << "Algorithm number must be 1 or 2 " << VertFileName << endl;
+        return -1;
+    }
+    if ((weighted != 0) || (weighted != 1))
+    {
+        cerr << "Weighted parametr must be 0 or 1 " << VertFileName << endl;
+        return -1;
+    }
     int vertNum, edjNum = 0;
     float *Coord;
     int tmp[6];
@@ -109,8 +125,9 @@ int mesh_partition(const char *VertFileName, const char *TetrFileName, const int
 
     // Prepare data for partition
     idx_t nvtxs,   // The number of vertices in the graph
-          ncon,    // The number of balancing constraints
+          ncon,    // The number of balancing constraints (the number of weights associated with each vertex)
           *xadj,   // Array of size nvtxs + 1, contains the vertex shift in adjncy
+          *vwgt,   // Array of size ncon * vertNum, contains weight of vertices
           *adjncy, // Array of size 2 * edjNum, contains borders for each vertex
           nparts,  // The number of parts to partition the graph
           objval,  // The edge-cut or the total communication volume of the partitioning solution
@@ -120,18 +137,19 @@ int mesh_partition(const char *VertFileName, const char *TetrFileName, const int
     ncon  = 1;
     nparts = cutNum;
     objval = 1;
+    vwgt = NULL;
 
     xadj = new idx_t[nvtxs + 1];
     part = new idx_t[nvtxs];
     xadj[0] = 1;
-    for (int i = 0; i < vertNum; i++)
+    for (int i = 0; i < nvtxs; i++)
     {
         xadj[i + 1] = xadj[i] + VerticesEdj[i].size();
         //cout << xadj[i + 1] << endl;
     }
     adjncy = new idx_t[2 * edjNum];
     int indx = 0;
-    for (int i = 0; i < vertNum; i++)
+    for (int i = 0; i < nvtxs; i++)
     {
         iter = VerticesEdj[i].begin();
             while (iter != VerticesEdj[i].end())
@@ -150,21 +168,35 @@ int mesh_partition(const char *VertFileName, const char *TetrFileName, const int
                 }
             }
     }
+    if (weighted == 1)
+    {
+        vwgt = new idx_t[nvtxs];
+        for (int i = 0; i < nvtxs; i++)
+        {
+            if (i < nvtxs / 3)
+                vwgt[i] = 10;
+            else
+                if (i < nvtxs * 2 / 3)
+                    vwgt[i] = 5;
+                else
+                    vwgt[i] = 1;
+        }
+    }
 
     unsigned int time = clock();
     int Result;
     switch (algorithm)
     {
         case 1:
-            Result = METIS_PartGraphRecursive(&nvtxs, &ncon, xadj, adjncy, NULL, NULL, NULL, &nparts,
+            Result = METIS_PartGraphRecursive(&nvtxs, &ncon, xadj, adjncy, vwgt, NULL, NULL, &nparts,
                                                   NULL, NULL, NULL, &objval, part);
             break;
         case 2:
-            Result = METIS_PartGraphKway(&nvtxs, &ncon, xadj, adjncy, NULL, NULL, NULL, &nparts,
+            Result = METIS_PartGraphKway(&nvtxs, &ncon, xadj, adjncy, vwgt, NULL, NULL, &nparts,
                                                   NULL, NULL, NULL, &objval, part);
             break;
         default:
-            Result = METIS_PartGraphRecursive(&nvtxs, &ncon, xadj, adjncy, NULL, NULL, NULL, &nparts,
+            Result = METIS_PartGraphRecursive(&nvtxs, &ncon, xadj, adjncy, vwgt, NULL, NULL, &nparts,
                                                   NULL, NULL, NULL, &objval, part);
             break;
     }

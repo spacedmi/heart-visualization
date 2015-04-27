@@ -1,9 +1,13 @@
 // Heart's mesh partition
 // Using Metis
-// Run command example: ./mesh-partition heart.node heart.ele 2 1
+// Run command example: ./mesh-partition heart.node heart.ele 2 1 1
 // Algorithms:
 // 1 - PartGraphRecursive
 // 2 - PartGraphKway
+// Weighted:
+// 0 - unweighted graph
+// 1 - weighted graph
+
 
 #include <iostream>
 #include <stdlib.h>
@@ -12,7 +16,7 @@
 int main(int argc, char *argv[])
 {
     char *VertFileName, *TetrFileName;
-    int cutNum, algorithm = 1;
+    int cutNum, algorithm = 1, weighted = 0;
 
     if (argc > 3)
         {
@@ -20,6 +24,7 @@ int main(int argc, char *argv[])
             TetrFileName = argv[2];
             cutNum = atoi(argv[3]);
             if (argc > 4) algorithm = atoi(argv[4]);
+            if (argc > 5) weighted = atoi(argv[5]);
         }
         else
         {
@@ -28,7 +33,7 @@ int main(int argc, char *argv[])
             return -1;
         }
 
-    if (mesh_partition(VertFileName, TetrFileName, cutNum, algorithm) < 0)
+    if (mesh_partition(VertFileName, TetrFileName, cutNum, algorithm, weighted) < 0)
         return -1;
 
     return 0;
