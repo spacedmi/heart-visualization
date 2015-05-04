@@ -1,9 +1,9 @@
 #include <iostream>
-#include <metis.h>
 #include <fstream>
 #include <vector>
 #include <string>
 #include <time.h>
+#include <metis.h>
 
 using namespace std;
 bool FindEl(vector<int> Vert, int Elem)
@@ -32,11 +32,11 @@ int mesh_partition(const char* VertFileName, const char* TetrFileName, const int
         cerr << "Algorithm number must be 1 or 2 " << VertFileName << endl;
         return -1;
     }
-    if ((weighted != 0) || (weighted != 1))
-    {
-        cerr << "Weighted parametr must be 0 or 1 " << VertFileName << endl;
-        return -1;
-    }
+//    if ((weighted != 0) || (weighted != 1))
+//    {
+//        cerr << "Weighted parametr must be 0 or 1 " << VertFileName << endl;
+//        return -1;
+//    }
     int vertNum, edjNum = 0;
     float *Coord;
     int tmp[6];
