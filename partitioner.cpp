@@ -3,12 +3,21 @@
 #include <vector>
 #include <string>
 #include <time.h>
+#include <sstream>
 #include <metis.h>
 
-using namespace std;
-bool FindEl(vector<int> Vert, int Elem)
+namespace patch
 {
-    vector<int>::iterator iter;
+    template < typename T > std::string to_string( const T& n )
+        {
+            std::ostringstream stm ;
+            stm << n ;
+            return stm.str() ;
+        }
+}
+bool FindEl(std::vector<int> Vert, int Elem)
+{
+    std::vector<int>::iterator iter;
     iter = Vert.begin();
         while (iter != Vert.end())
         {
@@ -24,12 +33,12 @@ int mesh_partition(const char* VertFileName, const char* TetrFileName, const int
 {
     if (cutNum < 1)
     {
-        cerr << "Cut number must be wore than 0 " << VertFileName << endl;
+        std::cerr << "Cut number must be wore than 0 " << VertFileName << std::endl;
         return -1;
     }
     if ((algorithm < 1) || (algorithm > 2))
     {
-        cerr << "Algorithm number must be 1 or 2 " << VertFileName << endl;
+        std::cerr << "Algorithm number must be 1 or 2 " << VertFileName << std::endl;
         return -1;
     }
 //    if ((weighted != 0) || (weighted != 1))
@@ -40,30 +49,30 @@ int mesh_partition(const char* VertFileName, const char* TetrFileName, const int
     int vertNum, edjNum = 0;
     float *Coord;
     int tmp[6];
-    vector<int>::iterator iter;
+    std::vector<int>::iterator iter;
 
-    ifstream VertFile(VertFileName);
-    ifstream TetrFile(TetrFileName);
+    std::ifstream VertFile(VertFileName);
+    std::ifstream TetrFile(TetrFileName);
 
     // Reading number of vertices in mesh
     if (VertFile)
     {
         if(!VertFile.good())
         {
-            cerr << "Something wrong with " << VertFileName << endl;
+            std::cerr << "Something wrong with " << VertFileName << std::endl;
             return -1;
         }
         VertFile >> vertNum;
     }
     else
     {
-        cerr << "ERROR: Can't open file " << VertFileName << endl;
+        std::cerr << "ERROR: Can't open file " << VertFileName << std::endl;
         return -1;
     }
 
     if (vertNum <= 0)
     {
-        cerr << "Number of verticies is 0" << endl;
+        std::cerr << "Number of verticies is 0" << std::endl;
         return -1;
     }
 
@@ -74,7 +83,7 @@ int mesh_partition(const char* VertFileName, const char* TetrFileName, const int
     {
         if(!VertFile.good())
         {
-         cerr << "Something wrong with " << VertFileName << endl;
+         std::cerr << "Something wrong with " << VertFileName << std::endl;
          return -1;
         }
 
@@ -86,7 +95,7 @@ int mesh_partition(const char* VertFileName, const char* TetrFileName, const int
     }
 
     // Reading tetrahedrons and filling structures
-    vector<int> VerticesEdj[vertNum];
+    std::vector<int> VerticesEdj[vertNum];
     if(TetrFile)
     {
         TetrFile >> tmp[1] >> tmp[1] >> tmp[1]; // First line of file
@@ -94,7 +103,7 @@ int mesh_partition(const char* VertFileName, const char* TetrFileName, const int
         {
             if(!TetrFile.good())
             {
-                cerr << "Something wrong with " << TetrFileName << endl;
+                std::cerr << "Something wrong with " << TetrFileName << std::endl;
                 return -1;
             }
             for (int i = 0; i < 6; i++)
@@ -119,7 +128,7 @@ int mesh_partition(const char* VertFileName, const char* TetrFileName, const int
     }
     else
     {
-        cerr << "ERROR: Can't open file " << TetrFileName << endl;
+        std::cerr << "ERROR: Can't open file " << TetrFileName << std::endl;
         return -1;
     }
 
@@ -163,7 +172,7 @@ int mesh_partition(const char* VertFileName, const char* TetrFileName, const int
                 }
                 else
                 {
-                    cout << "ERROR: adjncy index >= number of edjeces" << endl;
+                    std::cout << "ERROR: adjncy index >= number of edjeces" << std::endl;
                     break;
                 }
             }
@@ -206,47 +215,47 @@ int mesh_partition(const char* VertFileName, const char* TetrFileName, const int
     switch (Result)
     {
     case METIS_OK:
-        cout << "Successful partition" << endl;
+        std::cout << "Successful partition" << std::endl;
         break;
     case METIS_ERROR_INPUT:
-        cout << "Metis input error" << endl;
+        std::cout << "Metis input error" << std::endl;
         break;
     case METIS_ERROR_MEMORY:
-        cout << "Metis memory error" << endl;
+        std::cout << "Metis memory error" << std::endl;
         break;
     case METIS_ERROR:
-        cout << "Some Metis error" << endl;
+        std::cout << "Some Metis error" << std::endl;
         break;
     }
-    cout << "Total " << vertNum << " vertices" << endl;
+    std::cout << "Total " << vertNum << " vertices" << std::endl;
 
     // Recorfding each part to .XYZ file
     for (int i = 0; i < cutNum; i++)
     {
-        ofstream outFile;
-        outFile.open(to_string(i) + string("out.xyz"), ios_base::out);
-        outFile << vertNum << endl;
+        std::ofstream outFile;
+        std::stringstream ss;
+        outFile.open((patch::to_string(i) + std::string("out.xyz")).c_str());
+        outFile << vertNum << std::endl;
         int Number = 0;
         for (int j = 0; j < vertNum; j++)
         {
             if (part[j] == i)
             {
                 outFile << Number++;
-                outFile << (" " + to_string(Coord[j * 3]) + " " + to_string(Coord[j * 3 + 1]) +
-                        " " + to_string(Coord[j * 3 + 2])) << endl;
+                outFile << " " << Coord[j * 3] << " " << Coord[j * 3 + 1] <<  " " << Coord[j * 3 + 2] << std::endl;
             }
         }
         outFile.close();
-        cout << i << " Part: " << Number << " vertices" << endl;
+        std::cout << i << " Part: " << Number << " vertices" << std::endl;
     }
 
     // Recording all vertices to file
-    ofstream outF;
-    outF.open(string("PartFile.txt"), ios_base::out);
-    outF << vertNum << endl;
+    std::ofstream outF;
+    outF.open(std::string("PartFile.txt").c_str());
+    outF << vertNum << std::endl;
     for (int i = 0; i < vertNum; i++)
     {
-        outF << part[i] << " " << i << endl;
+        outF << part[i] << " " << i << std::endl;
     }
     outF.close();
 
@@ -295,6 +304,6 @@ int mesh_partition(const char* VertFileName, const char* TetrFileName, const int
     }
     delete[] relationClusterNumArr;
     // Output data capture results
-    cout << "relationNum = " << relationNum << " relationClusterNum = " << relationClusterNum << endl;
-    cout << "Work time:" << time << endl;
+    std::cout << "relationNum = " << relationNum << " relationClusterNum = " << relationClusterNum << std::endl;
+    std::cout << "Work time:" << time << std::endl;
 }
