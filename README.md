@@ -1,15 +1,26 @@
 heart-visualization
 ===================
 
-Human heart visualization project
+Human heart visualization project includes:
 
-Heart's mesh partition using Metis
+-------------------
+
+1 - **Mesh partition module.** Heart model mesh partition using Metis.
 Run command example: ./mesh-partition heart.node heart.ele 2 1 1
-Algorithms:
-1 - PartGraphRecursive
-2 - PartGraphKway
-Weighted:
-0 - unweighted graph
-1 - weighted graph
 
+Algorithms:
+- PartGraphRecursive
+- PartGraphKway
+
+Weighted:
+- unweighted graph
+- weighted graph
+
+-------------------
+
+2 - **Heart visualization (serial).**
+
+Input files: input/AllCellFile (contains info about model)
+
+Output files: result/result%Number%.csv where Number is a number of snapshot
 
