@@ -11,7 +11,6 @@ MyHeart::~MyHeart() {
 	if (snapshotFileName) delete snapshotFileName;
 }
 
-
 bool MyHeart::SetUp() {
 	isValid = ScanHeartFromFile();
 	return isValid;
@@ -40,10 +39,12 @@ void MyHeart::Step(double dt) {
 double MyHeart::Relation(Cell a) {
 	double res = 0.0;
 	Cell b;
+
 	for (int i = 0; i<a.countOfNeighbors; i++) {
 		b = cells[a.neighbors[i]];
 		res += (b.u - a.u) * Distance(a, b) / a.R;
 	}
+
 	return res;
 }
 
@@ -84,14 +85,6 @@ bool MyHeart::ScanHeartFromFile() {
 
 	fclose(f);
 	printf(" + Scanned file %s\n", FILE_CELL_ALL);
-
-	// Опускаю половину
-	/*
-	for (int i = 0; i<count; i++) {
-		cells[i].u = cells[i].u0;
-		cells[i].v = i<count / 2 ? cells[i].v0 : cells[i].v0 - 2;
-	}
-	*/
 
 	return true;
 }
