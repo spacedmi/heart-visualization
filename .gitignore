@@ -1,0 +1,8 @@
+*.user
+*~
+*.cmake
+*.make
+CMakeFiles
+Makefile
+input
+result
