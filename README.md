@@ -24,3 +24,8 @@ Input files: input/AllCellFile (contains info about model)
 
 Output files: result/result%Number%.csv where Number is a number of snapshot
 
+-------------------
+
+2 - **Heart visualization (multi).**
+
+
