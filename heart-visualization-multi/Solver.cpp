@@ -24,6 +24,7 @@ void Solver::MultiIntegrate()
     int ProcNum, ProcRank, numberOfSnapshot;
     double timeToSave;
     time_t work_time;
+    std::vector<int> cellVector;
 
     MPI_Comm_size(MPI_COMM_WORLD, &ProcNum);
     MPI_Comm_rank(MPI_COMM_WORLD, &ProcRank);
@@ -37,6 +38,10 @@ void Solver::MultiIntegrate()
         timeToSave = 0.0;
         printf("Started counting\n");
     }
+    else
+    {
+        cellVector = GetCellVectorByNum(ProcRank - 1);
+    }
 
     for (double t = 0.0; t < maxT; t += dt)
     {
@@ -45,6 +50,7 @@ void Solver::MultiIntegrate()
 
         if (ProcRank == 0)
         {
+            // TODO: recv data from all processes
             timeToSave += dt;
             if (timeToSave >= countDtTillSave * dt)
             {
@@ -81,12 +87,42 @@ std::vector<int> Solver::GetCellVectorByNum(int currentProcNum)
 
     partFile >> totalVertNum;
 
-    for(int i = 0; i < vertNum; i++)
+    for(int i = 0; i < totalVertNum; i++)
     {
         partFile >> procNum >> vertNum;
         if(procNum == currentProcNum)
-            cellVector.push_back(i);
+            cellVector.push_back(vertNum);
     }
 
     partFile.close();
+
+    return cellVector;
+}
+
+std::vector<int> Solver::GetProcOfVertVector()
+{
+    std::ifstream partFile;
+
+    int totalVertNum, procNum, vertNum;
+
+    partFile.open(std::string(PART_FILE_NAME).c_str());
+
+    if(!partFile)
+    {
+        std::cout << "Cannot open " << PART_FILE_NAME << " file." << std::endl;
+    }
+
+    partFile >> totalVertNum;
+
+    std::vector<int> cellVector(totalVertNum);
+
+    for(int i = 0; i < totalVertNum; i++)
+    {
+        partFile >> procNum >> vertNum;
+        cellVector[vertNum] = procNum;
+    }
+
+    partFile.close();
+
+    return cellVector;
 }

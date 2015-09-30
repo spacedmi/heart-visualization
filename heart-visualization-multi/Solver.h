@@ -28,5 +28,6 @@ private:
     int countDtTillSave;
 
     std::vector<int> GetCellVectorByNum(int currentProcNum);
+    std::vector<int> GetProcOfVertVector();
 };
 

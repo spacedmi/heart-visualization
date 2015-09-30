@@ -14,7 +14,7 @@ public:
 	int countOfNeighbors;
 	int *neighbors;
 
-	double u0, v0;
+    double u0, v0;
 	double u, v;
 	double u1, v1;
 
