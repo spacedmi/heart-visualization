@@ -16,23 +16,25 @@ bool MyHeart::SetUp() {
 	return isValid;
 }
 
-void MyHeart::Step(double dt) {
+void MyHeart::Step(double dt, std::vector<int> cellVector) {
 	if (!isValid) {
 		printf("Heart is not valid\n");
 		return;
 	}
 
-	double u, v;
-	for (int i = 0; i<count; i++) {
-		u = cells[i].u;
-		v = cells[i].v;
-		cells[i].u1 = u + dt*(u - u*u*u / 3.0 - v + Relation(cells[i]));
-		cells[i].v1 = v + dt*(u - param_a)*param_e;
+    double u, v; int currentIndex;
+    for (int i = 0; i < cellVector.size(); i++) {
+        currentIndex = cellVector[i];
+        u = cells[currentIndex].u;
+        v = cells[currentIndex].v;
+        cells[currentIndex].u1 = u + dt*(u - u*u*u / 3.0 - v + Relation(cells[currentIndex]));
+        cells[currentIndex].v1 = v + dt*(u - param_a)*param_e;
 	}
 
-	for (int i = 0; i<count; i++) {
-		cells[i].u = cells[i].u1;
-		cells[i].v = cells[i].v1;
+    for (int i = 0; i < cellVector.size(); i++) {
+        currentIndex = cellVector[i];
+        cells[currentIndex].u = cells[currentIndex].u1;
+        cells[currentIndex].v = cells[currentIndex].v1;
 	}
 }
 

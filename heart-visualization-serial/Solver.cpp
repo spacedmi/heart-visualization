@@ -26,10 +26,8 @@ void Solver::Integrate() {
 
 	printf("Started counting\n");
 	for (double t = 0.0; t<maxT; t += dt) {
-		// Делаем шаг по dt
 		ode->Step(dt);
 
-		// Сохраняем состояние в файл
 		timeToSave += dt;
 		if (timeToSave >= countDtTillSave * dt) {
 			printf("\r%5.1lf%%", 100.0*t/maxT); fflush(stdout);
