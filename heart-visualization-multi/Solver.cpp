@@ -22,9 +22,14 @@ void Solver::MultiIntegrate()
 	}
 
     int ProcNum, ProcRank, numberOfSnapshot;
+
+    // MPI data
+    int* SendCounts;
+    int* Displs;
+
     double timeToSave;
     time_t work_time;
-    std::vector<int> cellVector;
+    std::vector<int> CellVector, ProcOfVertVector;
 
     MPI_Comm_size(MPI_COMM_WORLD, &ProcNum);
     MPI_Comm_rank(MPI_COMM_WORLD, &ProcRank);
@@ -40,12 +45,17 @@ void Solver::MultiIntegrate()
     }
     else
     {
-        cellVector = GetCellVectorByNum(ProcRank - 1);
+        CellVector = GetCellVectorByNum(ProcRank - 1);
     }
+
+    // Prepare data for MPI_Gatherv
+    ProcOfVertVector = GetProcOfVertVector();
+    SendCounts = FillSendCounts(ProcNum, ProcOfVertVector);
+    Displs = FillDispls(ProcNum, SendCounts);
 
     for (double t = 0.0; t < maxT; t += dt)
     {
-
+        // TODO: send data to all processes
         //ode->Step(dt);
 
         if (ProcRank == 0)
@@ -69,6 +79,9 @@ void Solver::MultiIntegrate()
         printf("\rWork tick time: %d, work time in sec: %d\n", (int)work_time,
                (int)(work_time / CLOCKS_PER_SEC));
     }
+
+    delete[] SendCounts;
+    delete[] Displs;
 }
 
 std::vector<int> Solver::GetCellVectorByNum(int currentProcNum)
@@ -125,4 +138,33 @@ std::vector<int> Solver::GetProcOfVertVector()
     partFile.close();
 
     return cellVector;
+}
+
+int* Solver::FillSendCounts(int ProcNum, std::vector<int> ProcOfVertVector)
+{
+    int* SendCounts = new int[ProcNum];
+
+    for(int i; i < ProcNum; i++)
+        SendCounts[i] = 0;
+
+    for(int i = 0; i < ProcOfVertVector.size(); i++)
+    {
+        SendCounts[ProcOfVertVector[i]]++;
+    }
+
+    for(int i; i < ProcNum; i++)
+        SendCounts[i] *= 2;
+
+    return SendCounts;
+}
+
+int* Solver::FillDispls(int ProcNum, int* SendCounts)
+{
+    int* Displs = new int[ProcNum];
+    Displs[0] = 0;
+
+    for(int i = 1; i < ProcNum; i++)
+        Displs[i] = Displs[i - 1] + SendCounts[i];
+
+    return Displs;
 }
