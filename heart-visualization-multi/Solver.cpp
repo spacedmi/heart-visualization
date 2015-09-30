@@ -21,10 +21,25 @@ void Solver::MultiIntegrate()
 		return;
 	}
 
-    int ProcNum, ProcRank, numberOfSnapshot;
+    int ProcNum, ProcRank, NumOfVertices, numberOfSnapshot;
+
+    // MPI_Scatterv data
+//    int ScatterSendCount;
+//    int* ScatterRecvCounts;
+//    int* ScatterDispls;
+//    double* ScatterSendBuf;
+//    double* ScatterRBuf;
+
+    // MPI_Gatherv data
+    int GatherSendCount;
+    int* GatherRecvCounts;
+    int* GatherDispls;
+    double* GatherSendBuf;
+    double* GatherRBuf;
+
     double timeToSave;
     time_t work_time;
-    std::vector<int> cellVector;
+    std::vector<int> CellVector, ProcOfVertVector;
 
     MPI_Comm_size(MPI_COMM_WORLD, &ProcNum);
     MPI_Comm_rank(MPI_COMM_WORLD, &ProcRank);
@@ -40,12 +55,22 @@ void Solver::MultiIntegrate()
     }
     else
     {
-        cellVector = GetCellVectorByNum(ProcRank - 1);
+        CellVector = GetCellVectorByNum(ProcRank - 1);
     }
+
+    // Prepare data for MPI_Gatherv
+    ProcOfVertVector = GetProcOfVertVector();
+    NumOfVertices = GetNumOfVertices();
+
+    GatherRecvCounts = FillRecvCounts(ProcNum, ProcOfVertVector);
+    GatherDispls = FillDispls(ProcNum, GatherRecvCounts);
+    GatherRBuf = new double[NumOfVertices * 2];
+    GatherSendCount = CellVector.size() * 2;
+    GatherSendBuf = new double[GatherSendCount];
 
     for (double t = 0.0; t < maxT; t += dt)
     {
-
+        // TODO: send data to all processes
         //ode->Step(dt);
 
         if (ProcRank == 0)
@@ -69,6 +94,11 @@ void Solver::MultiIntegrate()
         printf("\rWork tick time: %d, work time in sec: %d\n", (int)work_time,
                (int)(work_time / CLOCKS_PER_SEC));
     }
+
+    delete[] GatherRecvCounts;
+    delete[] GatherDispls;
+    delete[] GatherRBuf;
+    delete[] GatherSendBuf;
 }
 
 std::vector<int> Solver::GetCellVectorByNum(int currentProcNum)
@@ -125,4 +155,54 @@ std::vector<int> Solver::GetProcOfVertVector()
     partFile.close();
 
     return cellVector;
+}
+
+int Solver::GetNumOfVertices()
+{
+    std::ifstream partFile;
+
+    int totalVertNum;
+
+    partFile.open(std::string(PART_FILE_NAME).c_str());
+
+    if(!partFile)
+    {
+        std::cout << "Cannot open " << PART_FILE_NAME << " file." << std::endl;
+        return 0;
+    }
+
+    partFile >> totalVertNum;
+
+    partFile.close();
+
+    return totalVertNum;
+}
+
+int* Solver::FillRecvCounts(int ProcNum, std::vector<int> ProcOfVertVector)
+{
+    int* SendCounts = new int[ProcNum];
+
+    for(int i; i < ProcNum; i++)
+        SendCounts[i] = 0;
+
+    for(int i = 0; i < ProcOfVertVector.size(); i++)
+    {
+        SendCounts[ProcOfVertVector[i]]++;
+    }
+
+    for(int i; i < ProcNum; i++)
+        SendCounts[i] *= 2;
+
+    return SendCounts;
+}
+
+int* Solver::FillDispls(int ProcNum, int* SendCounts)
+{
+    int* Displs = new int[ProcNum];
+    Displs[0] = 0;
+
+    for(int i = 1; i < ProcNum; i++)
+        Displs[i] = Displs[i - 1] + SendCounts[i];
+
+    return Displs;
 }

@@ -29,5 +29,8 @@ private:
 
     std::vector<int> GetCellVectorByNum(int currentProcNum);
     std::vector<int> GetProcOfVertVector();
+    int* FillRecvCounts(int ProcNum, std::vector<int> ProcOfVertVector);
+    int* FillDispls(int ProcNum, int* SendCounts);
+    int GetNumOfVertices();
 };
 
