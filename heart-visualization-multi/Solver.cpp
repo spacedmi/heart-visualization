@@ -21,11 +21,21 @@ void Solver::MultiIntegrate()
 		return;
 	}
 
-    int ProcNum, ProcRank, numberOfSnapshot;
+    int ProcNum, ProcRank, NumOfVertices, numberOfSnapshot;
 
-    // MPI data
-    int* SendCounts;
-    int* Displs;
+    // MPI_Scatterv data
+//    int ScatterSendCount;
+//    int* ScatterRecvCounts;
+//    int* ScatterDispls;
+//    double* ScatterSendBuf;
+//    double* ScatterRBuf;
+
+    // MPI_Gatherv data
+    int GatherSendCount;
+    int* GatherRecvCounts;
+    int* GatherDispls;
+    double* GatherSendBuf;
+    double* GatherRBuf;
 
     double timeToSave;
     time_t work_time;
@@ -50,8 +60,13 @@ void Solver::MultiIntegrate()
 
     // Prepare data for MPI_Gatherv
     ProcOfVertVector = GetProcOfVertVector();
-    SendCounts = FillSendCounts(ProcNum, ProcOfVertVector);
-    Displs = FillDispls(ProcNum, SendCounts);
+    NumOfVertices = GetNumOfVertices();
+
+    GatherRecvCounts = FillRecvCounts(ProcNum, ProcOfVertVector);
+    GatherDispls = FillDispls(ProcNum, GatherRecvCounts);
+    GatherRBuf = new double[NumOfVertices * 2];
+    GatherSendCount = CellVector.size() * 2;
+    GatherSendBuf = new double[GatherSendCount];
 
     for (double t = 0.0; t < maxT; t += dt)
     {
@@ -80,8 +95,10 @@ void Solver::MultiIntegrate()
                (int)(work_time / CLOCKS_PER_SEC));
     }
 
-    delete[] SendCounts;
-    delete[] Displs;
+    delete[] GatherRecvCounts;
+    delete[] GatherDispls;
+    delete[] GatherRBuf;
+    delete[] GatherSendBuf;
 }
 
 std::vector<int> Solver::GetCellVectorByNum(int currentProcNum)
@@ -140,7 +157,28 @@ std::vector<int> Solver::GetProcOfVertVector()
     return cellVector;
 }
 
-int* Solver::FillSendCounts(int ProcNum, std::vector<int> ProcOfVertVector)
+int Solver::GetNumOfVertices()
+{
+    std::ifstream partFile;
+
+    int totalVertNum;
+
+    partFile.open(std::string(PART_FILE_NAME).c_str());
+
+    if(!partFile)
+    {
+        std::cout << "Cannot open " << PART_FILE_NAME << " file." << std::endl;
+        return 0;
+    }
+
+    partFile >> totalVertNum;
+
+    partFile.close();
+
+    return totalVertNum;
+}
+
+int* Solver::FillRecvCounts(int ProcNum, std::vector<int> ProcOfVertVector)
 {
     int* SendCounts = new int[ProcNum];
 
