@@ -21,14 +21,15 @@ void Solver::MultiIntegrate()
 		return;
 	}
 
-    int ProcNum, ProcRank, NumOfVertices, numberOfSnapshot;
+    int ProcNum, RealProcNum, ProcRank, NumOfVertices, numberOfSnapshot;
 
     // MPI_Scatterv data
-//    int ScatterSendCount;
-//    int* ScatterRecvCounts;
-//    int* ScatterDispls;
-//    double* ScatterSendBuf;
-//    double* ScatterRBuf;
+    double* ScatterSendBuf;
+    int* ScatterSendCounts;
+    int ScatterSendCount;
+    int* ScatterDispls;
+    double* ScatterRecvBuf;
+    int ScatterRecvCount;
 
     // MPI_Gatherv data
     int GatherSendCount;
@@ -43,6 +44,7 @@ void Solver::MultiIntegrate()
 
     MPI_Comm_size(MPI_COMM_WORLD, &ProcNum);
     MPI_Comm_rank(MPI_COMM_WORLD, &ProcRank);
+    RealProcNum = ProcNum - 1;
 
     if (ProcRank == 0)
     {
@@ -62,11 +64,17 @@ void Solver::MultiIntegrate()
     ProcOfVertVector = GetProcOfVertVector();
     NumOfVertices = GetNumOfVertices();
 
-    GatherRecvCounts = FillRecvCounts(ProcNum, ProcOfVertVector);
-    GatherDispls = FillDispls(ProcNum, GatherRecvCounts);
+    GatherRecvCounts = FillRecvCounts(RealProcNum, ProcOfVertVector);
+    GatherDispls = FillDispls(RealProcNum, GatherRecvCounts);
     GatherRBuf = new double[NumOfVertices * 2];
     GatherSendCount = CellVector.size() * 2;
     GatherSendBuf = new double[GatherSendCount];
+
+    // Prepare data for MPI_Scatterv
+    ScatterSendCount = 2 * GetTotalCountOfBadNeighbors(RealProcNum, ProcOfVertVector);
+    ScatterSendBuf = new double[ScatterSendCount];
+    ScatterSendCounts = FillSendCounts(RealProcNum, ProcOfVertVector);
+    ScatterDispls = FillDispls(RealProcNum, ScatterSendCounts);
 
     for (double t = 0.0; t < maxT; t += dt)
     {
@@ -99,6 +107,9 @@ void Solver::MultiIntegrate()
     delete[] GatherDispls;
     delete[] GatherRBuf;
     delete[] GatherSendBuf;
+
+    delete[] ScatterSendBuf;
+    delete[] ScatterSendCounts;
 }
 
 std::vector<int> Solver::GetCellVectorByNum(int currentProcNum)
@@ -180,18 +191,28 @@ int Solver::GetNumOfVertices()
 
 int* Solver::FillRecvCounts(int ProcNum, std::vector<int> ProcOfVertVector)
 {
-    int* SendCounts = new int[ProcNum];
+    int* RecvCounts = new int[ProcNum];
 
     for(int i; i < ProcNum; i++)
-        SendCounts[i] = 0;
+        RecvCounts[i] = 0;
 
     for(int i = 0; i < ProcOfVertVector.size(); i++)
     {
-        SendCounts[ProcOfVertVector[i]]++;
+        RecvCounts[ProcOfVertVector[i]]++;
     }
 
     for(int i; i < ProcNum; i++)
-        SendCounts[i] *= 2;
+        RecvCounts[i] *= 2;
+
+    return RecvCounts;
+}
+
+int* Solver::FillSendCounts(int ProcNum, std::vector<int> ProcOfVertVector)
+{
+    int* SendCounts = new int[ProcNum];
+
+    for(int i; i < ProcNum; i++)
+        SendCounts[i] = GetCountOfBadNeighborsByProcRank(i, ProcOfVertVector);
 
     return SendCounts;
 }
@@ -205,4 +226,34 @@ int* Solver::FillDispls(int ProcNum, int* SendCounts)
         Displs[i] = Displs[i - 1] + SendCounts[i];
 
     return Displs;
+}
+
+int Solver::GetTotalCountOfBadNeighbors(int procNum, std::vector<int> ProcOfVertVector)
+{
+    int totalCount = 0;
+    for(int k = 0; k < procNum; k++)
+        for(int i = 0; i < ode->count; i++)
+            if(ProcOfVertVector[i] == k)
+                for (int j = 0; j < ode->cells[i].countOfNeighbors; j++)
+                    if (!IsCurNeighborInCurProc(ode->cells[i].neighbors[j], k, ProcOfVertVector))
+                        totalCount++;
+    return totalCount;
+}
+
+int Solver::GetCountOfBadNeighborsByProcRank(int currentProc, std::vector<int> ProcOfVertVector)
+{
+    std::vector<int> CellVector = GetCellVectorByNum(currentProc);
+    int countOfBadNeighbors = 0;
+    for(int i = 0; i < CellVector.size(); i++)
+        for(int j = 0; j < ode->cells[CellVector[i]].countOfNeighbors; j++)
+            if(!IsCurNeighborInCurProc(ode->cells[CellVector[i]].neighbors[j], currentProc, ProcOfVertVector))
+                countOfBadNeighbors++;
+}
+
+bool Solver::IsCurNeighborInCurProc(int numOfNeighbor, int currentProc, std::vector<int> ProcOfVertVector)
+{
+    if (ProcOfVertVector[numOfNeighbor] != currentProc )
+        return false;
+    else
+        return true;
 }
