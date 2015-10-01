@@ -75,10 +75,27 @@ void Solver::MultiIntegrate()
     ScatterSendBuf = new double[ScatterSendCount];
     ScatterSendCounts = FillSendCounts(RealProcNum, ProcOfVertVector);
     ScatterDispls = FillDispls(RealProcNum, ScatterSendCounts);
+    ScatterRecvCount = GetCountOfBadNeighborsByProcRank(ProcRank - 1, ProcOfVertVector) * 2;
+    ScatterRecvBuf = new double[ScatterRecvCount];
 
     for (double t = 0.0; t < maxT; t += dt)
     {
-        // TODO: send data to all processes
+        // Fill data for MPI_Scatterv
+        if (ProcRank == 0)
+        {
+            if(!FillScatterSendBuf(ScatterSendBuf, ScatterSendCount, RealProcNum, ProcOfVertVector))
+                return;
+        }
+
+        MPI_Scatterv(ScatterSendBuf, ScatterSendCounts, ScatterDispls, MPI_DOUBLE, ScatterRecvBuf,
+                     ScatterRecvCount, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+        if (ProcRank != 0)
+        {
+            if(!GetInfoFromScatterRecvBuf(ScatterRecvBuf, ScatterRecvCount, ProcRank - 1, ProcOfVertVector))
+                return;
+        }
+
         //ode->Step(dt);
 
         if (ProcRank == 0)
@@ -110,6 +127,8 @@ void Solver::MultiIntegrate()
 
     delete[] ScatterSendBuf;
     delete[] ScatterSendCounts;
+    delete[] ScatterDispls;
+    delete[] ScatterRecvBuf;
 }
 
 std::vector<int> Solver::GetCellVectorByNum(int currentProcNum)
@@ -256,4 +275,43 @@ bool Solver::IsCurNeighborInCurProc(int numOfNeighbor, int currentProc, std::vec
         return false;
     else
         return true;
+}
+
+int Solver::FillScatterSendBuf(double* SendBuf, int SendCount, int procNum, std::vector<int> ProcOfVertVector)
+{
+    int count = 0;
+    for(int k = 0; k < procNum; k++)
+        for(int i = 0; i < ode->count; i++)
+            if(ProcOfVertVector[i] == k)
+                for (int j = 0; j < ode->cells[i].countOfNeighbors; j++)
+                    if (!IsCurNeighborInCurProc(ode->cells[i].neighbors[j], k, ProcOfVertVector))
+                    {
+                        if (SendCount <= count)
+                        {
+                            std::cout << "Cannot fill scatterv send buffer!" << std::endl;
+                            return 0;
+                        }
+                        SendBuf[count++] = ode->cells[ode->cells[i].neighbors[j]].u;
+                        SendBuf[count++] = ode->cells[ode->cells[i].neighbors[j]].v;
+                    }
+    return 1;
+}
+
+int Solver::GetInfoFromScatterRecvBuf(double* RecvBuf, int RecvCount, int currentProc, std::vector<int> ProcOfVertVector)
+{
+    std::vector<int> CellVector = GetCellVectorByNum(currentProc);
+    int count = 0;
+    for(int i = 0; i < CellVector.size(); i++)
+        for(int j = 0; j < ode->cells[CellVector[i]].countOfNeighbors; j++)
+            if(!IsCurNeighborInCurProc(ode->cells[CellVector[i]].neighbors[j], currentProc, ProcOfVertVector))
+            {
+                if (RecvCount <= count)
+                {
+                    std::cout << "Cannot get info from scatterv recv buffer! " << "Process " << currentProc << std::endl;
+                    return 0;
+                }
+                ode->cells[ode->cells[CellVector[i]].neighbors[j]].u = RecvBuf[count++];
+                ode->cells[ode->cells[CellVector[i]].neighbors[j]].v = RecvBuf[count++];
+            }
+    return 1;
 }

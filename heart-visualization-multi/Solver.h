@@ -39,5 +39,8 @@ private:
     bool IsCurNeighborInCurProc(int numOfNeighbor, int currentProc, std::vector<int> ProcOfVertVector);
     int* FillSendCounts(int ProcNum, std::vector<int> ProcOfVertVector);
     int GetCountOfBadNeighborsByProcRank(int currentProc, std::vector<int> ProcOfVertVector);
+
+    int FillScatterSendBuf(double* SendBuf, int SendCount, int procNum, std::vector<int> ProcOfVertVector);
+    int GetInfoFromScatterRecvBuf(double* RecvBuf, int RecvCount, int currentProc, std::vector<int> ProcOfVertVector);
 };
 
