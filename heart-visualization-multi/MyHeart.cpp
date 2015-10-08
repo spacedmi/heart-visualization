@@ -80,7 +80,7 @@ bool MyHeart::ScanHeartFromFile() {
 	}
 
     fscanf(f, "%i", &count);
-	cells = new Cell[count];
+    cells = new Cell[count];
 	for (int i = 0; i<count; i++) {
 		cells[i].ScanCellFromFile(f);
 	}

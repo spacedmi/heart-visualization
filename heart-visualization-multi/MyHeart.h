@@ -1,4 +1,3 @@
-#include "Solver.h"
 #include "Cell.h"
 #include <vector>
 
@@ -8,7 +7,7 @@
 #define param_e 0.01
 #define FILE_CELL_ALL "input/AllCellFile"
 
-class MyHeart : public IODE
+class MyHeart
 {
 public:
 	MyHeart();
