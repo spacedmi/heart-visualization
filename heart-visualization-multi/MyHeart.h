@@ -1,4 +1,3 @@
-#include "Solver.h"
 #include "Cell.h"
 #include <vector>
 
@@ -8,7 +7,7 @@
 #define param_e 0.01
 #define FILE_CELL_ALL "input/AllCellFile"
 
-class MyHeart : public IODE
+class MyHeart
 {
 public:
 	MyHeart();
@@ -18,14 +17,13 @@ public:
 	bool SetUp();
     void Step(double dt, std::vector<int> cellVector);
 	void SaveState(int numberOfSnapshot);
+    Cell *cells;
+    int count;
 
 private:
 	bool isValid;
 	bool ScanHeartFromFile();
 	char *snapshotFileName;
-
-	int count;
-	Cell *cells;
 
 	double Distance(Cell a, Cell b);
 	double sqrDistance(Cell a, Cell b);

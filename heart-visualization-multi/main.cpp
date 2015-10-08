@@ -8,7 +8,8 @@
 
 int main(int argc, char *argv[])
 {
-	IODE* ode = new MyHeart();
+    MyHeart* ode = new MyHeart();
+
     Solver solver(ode, D_dt, D_maxT, D_count_dt_till_save);
 
     MPI_Init(&argc, &argv);
