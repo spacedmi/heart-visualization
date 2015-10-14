@@ -39,7 +39,7 @@ void Solver::MultiIntegrate()
     double* GatherRBuf;
 
     double timeToSave;
-    time_t work_time;
+    time_t work_time, temp, time1 = 0, time2 = 0, time3 = 0;
     std::vector<int> CellVector, ProcOfVertVector;
 
     MPI_Comm_size(MPI_COMM_WORLD, &ProcNum);
@@ -87,15 +87,32 @@ void Solver::MultiIntegrate()
         // Fill data for MPI_Scatterv
         if (ProcRank == 0)
         {
-            if(!FillScatterSendBuf(ScatterSendBuf, ScatterSendCount, ProcNum, ProcOfVertVector))
+            temp = clock();
+            if(!FillScatterSendBuf(ScatterSendBuf, ScatterDispls, ProcNum, ProcOfVertVector))
                 return;
+            temp = clock() - temp;
+            time1 += temp;
+            temp = clock();
         }
 
         MPI_Scatterv(ScatterSendBuf, ScatterSendCounts, ScatterDispls, MPI_DOUBLE, ScatterRecvBuf,
                      ScatterRecvCount, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
+        if (ProcRank == 0)
+        {
+            temp = clock() - temp;
+            time2 += temp;
+            temp = clock();
+        }
+
         if(!GetInfoFromScatterRecvBuf(ScatterRecvBuf, ScatterRecvCount, ProcRank, ProcOfVertVector, CellVector))
             return;
+
+        if (ProcRank == 0)
+        {
+            temp = clock() - temp;
+            time3 += temp;
+        }
 
         ode->Step(dt, CellVector);
 
@@ -127,6 +144,12 @@ void Solver::MultiIntegrate()
         printf("\r + Done\n");
         printf("\rWork tick time: %d, work time in sec: %d\n", (int)work_time,
                (int)(work_time / CLOCKS_PER_SEC));
+        printf("\rWork tick time1: %d, work time in sec: %d\n", (int)time1,
+               (int)(time1 / CLOCKS_PER_SEC));
+        printf("\rWork tick time2: %d, work time in sec: %d\n", (int)time2,
+               (int)(time2 / CLOCKS_PER_SEC));
+        printf("\rWork tick time3: %d, work time in sec: %d\n", (int)time3,
+               (int)(time3  / CLOCKS_PER_SEC));
     }
 
     delete[] GatherRecvCounts;
@@ -314,28 +337,43 @@ bool Solver::IsCurNeighborInCurProc(int numOfNeighbor, int currentProc, std::vec
         return true;
 }
 
-int Solver::FillScatterSendBuf(double* SendBuf, int SendCount, int procNum, std::vector<int> ProcOfVertVector)
+int Solver::FillScatterSendBuf(double* SendBuf, int* Displs, int procNum, std::vector<int> ProcOfVertVector)
 {
-    int count = 0;
-    for(int k = 0; k < procNum; k++)
-        for(int i = 0; i < ode->count; i++)
-            if(ProcOfVertVector[i] == k)
-                for (int j = 0; j < ode->cells[i].countOfNeighbors; j++)
-                    if (!IsCurNeighborInCurProc(ode->cells[i].neighbors[j], k, ProcOfVertVector))
-                    {
-                        if (SendCount <= count)
-                        {
-                            std::cout << "Cannot fill scatterv send buffer!" << std::endl;
-                            return 0;
-                        }
-                        SendBuf[count++] = ode->cells[ode->cells[i].neighbors[j]].u;
-                        SendBuf[count++] = ode->cells[ode->cells[i].neighbors[j]].v;
-                    }
-    if (SendCount != count)
+    std::vector<int> counts(procNum);
+    for(int i = 0; i < procNum; i++)
+        counts[i] = 0;
+    int currentProc;
+    for(int i = 0; i < ode->count; i++)
     {
-        std::cout << "Error in FillScatterSendBuf: SendCount = " << SendCount << "RealCount = " << count << std::endl;
-        return 0;
+        currentProc = ProcOfVertVector[i];
+        for (int j = 0; j < ode->cells[i].countOfNeighbors; j++)
+            if (!IsCurNeighborInCurProc(ode->cells[i].neighbors[j], currentProc, ProcOfVertVector))
+            {
+                SendBuf[Displs[currentProc] + counts[currentProc]] = ode->cells[ode->cells[i].neighbors[j]].u;
+                SendBuf[Displs[currentProc] + counts[currentProc] + 1] = ode->cells[ode->cells[i].neighbors[j]].v;
+                counts[currentProc] +=2;
+            }
     }
+//    int count = 0;
+//    for(int k = 0; k < procNum; k++)
+//        for(int i = 0; i < ode->count; i++)
+//            if(ProcOfVertVector[i] == k)
+//                for (int j = 0; j < ode->cells[i].countOfNeighbors; j++)
+//                    if (!IsCurNeighborInCurProc(ode->cells[i].neighbors[j], k, ProcOfVertVector))
+//                    {
+//                        if (SendCount <= count)
+//                        {
+//                            std::cout << "Cannot fill scatterv send buffer!" << std::endl;
+//                            return 0;
+//                        }
+//                        SendBuf[count++] = ode->cells[ode->cells[i].neighbors[j]].u;
+//                        SendBuf[count++] = ode->cells[ode->cells[i].neighbors[j]].v;
+//                    }
+//    if (SendCount != count)
+//    {
+//        std::cout << "Error in FillScatterSendBuf: SendCount = " << SendCount << "RealCount = " << count << std::endl;
+//        return 0;
+//    }
     return 1;
 }
 
