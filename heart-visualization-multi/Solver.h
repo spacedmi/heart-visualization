@@ -31,9 +31,10 @@ private:
     int* FillSendCounts(int ProcNum, std::vector<int> ProcOfVertVector);
     int GetCountOfBadNeighborsByProcRank(int currentProc, std::vector<int> ProcOfVertVector);
 
-    int FillScatterSendBuf(double* SendBuf, int* Displs, int procNum, std::vector<int> ProcOfVertVector);
+    int FillScatterSendBuf(double* SendBuf, int SendCount, int* SendMap);
     int GetInfoFromScatterRecvBuf(double* SendBuf, int SendCount, int currentProc, std::vector<int> ProcOfVertVector,
                                   std::vector<int> CellVector);
+    int* FillSendMap(int SendCount, int procNum, std::vector<int> ProcOfVertVector);
 
     int FillGatherSendBuf(double* SendBuf, int SendCount, int currentProc, std::vector<int> ProcOfVertVector,
                           std::vector<int> CellVector);

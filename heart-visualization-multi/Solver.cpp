@@ -28,6 +28,7 @@ void Solver::MultiIntegrate()
     int* ScatterSendCounts;
     int ScatterSendCount;
     int* ScatterDispls;
+    int* ScatterSendMap;
     double* ScatterRecvBuf;
     int ScatterRecvCount;
 
@@ -72,8 +73,9 @@ void Solver::MultiIntegrate()
     ScatterSendBuf = new double[ScatterSendCount];
     ScatterSendCounts = FillSendCounts(ProcNum, ProcOfVertVector);
     ScatterDispls = FillDispls(ProcNum, ScatterSendCounts);
-
+    ScatterSendMap = FillSendMap(ScatterSendCount, ProcNum, ProcOfVertVector);
     ScatterRecvCount = GetCountOfBadNeighborsByProcRank(ProcRank, ProcOfVertVector) * 2;
+
     if (ScatterRecvCount <= 0)
     {
         std::cout << "Error: Scatter Recv Count is " << ScatterRecvCount << std::endl;
@@ -88,7 +90,7 @@ void Solver::MultiIntegrate()
         if (ProcRank == 0)
         {
             temp = clock();
-            if(!FillScatterSendBuf(ScatterSendBuf, ScatterDispls, ProcNum, ProcOfVertVector))
+            if(!FillScatterSendBuf(ScatterSendBuf, ScatterSendCount, ScatterSendMap))
                 return;
             temp = clock() - temp;
             time1 += temp;
@@ -337,43 +339,36 @@ bool Solver::IsCurNeighborInCurProc(int numOfNeighbor, int currentProc, std::vec
         return true;
 }
 
-int Solver::FillScatterSendBuf(double* SendBuf, int* Displs, int procNum, std::vector<int> ProcOfVertVector)
+int* Solver::FillSendMap(int SendCount, int procNum, std::vector<int> ProcOfVertVector)
 {
-    std::vector<int> counts(procNum);
-    for(int i = 0; i < procNum; i++)
-        counts[i] = 0;
-    int currentProc;
-    for(int i = 0; i < ode->count; i++)
+    int* SendMap = new int[SendCount];
+
+    int count = 0;
+    for(int k = 0; k < procNum; k++)
+        for(int i = 0; i < ode->count; i++)
+            if(ProcOfVertVector[i] == k)
+                for (int j = 0; j < ode->cells[i].countOfNeighbors; j++)
+                    if (!IsCurNeighborInCurProc(ode->cells[i].neighbors[j], k, ProcOfVertVector))
+                    {
+                        if (SendCount <= count)
+                        {
+                            std::cout << "Cannot fill scatterv send buffer!" << std::endl;
+                            return 0;
+                        }
+                        SendMap[count++] = ode->cells[i].neighbors[j];
+                        SendMap[count++] = ode->cells[i].neighbors[j];
+                    }
+
+    return SendMap;
+}
+
+int Solver::FillScatterSendBuf(double* SendBuf, int SendCount, int* SendMap)
+{
+    for(int i = 0; i < SendCount / 2; i++)
     {
-        currentProc = ProcOfVertVector[i];
-        for (int j = 0; j < ode->cells[i].countOfNeighbors; j++)
-            if (!IsCurNeighborInCurProc(ode->cells[i].neighbors[j], currentProc, ProcOfVertVector))
-            {
-                SendBuf[Displs[currentProc] + counts[currentProc]] = ode->cells[ode->cells[i].neighbors[j]].u;
-                SendBuf[Displs[currentProc] + counts[currentProc] + 1] = ode->cells[ode->cells[i].neighbors[j]].v;
-                counts[currentProc] +=2;
-            }
+        SendBuf[i * 2] = ode->cells[SendMap[i * 2]].u;
+        SendBuf[i * 2 + 1] = ode->cells[SendMap[i * 2 + 1]].v;
     }
-//    int count = 0;
-//    for(int k = 0; k < procNum; k++)
-//        for(int i = 0; i < ode->count; i++)
-//            if(ProcOfVertVector[i] == k)
-//                for (int j = 0; j < ode->cells[i].countOfNeighbors; j++)
-//                    if (!IsCurNeighborInCurProc(ode->cells[i].neighbors[j], k, ProcOfVertVector))
-//                    {
-//                        if (SendCount <= count)
-//                        {
-//                            std::cout << "Cannot fill scatterv send buffer!" << std::endl;
-//                            return 0;
-//                        }
-//                        SendBuf[count++] = ode->cells[ode->cells[i].neighbors[j]].u;
-//                        SendBuf[count++] = ode->cells[ode->cells[i].neighbors[j]].v;
-//                    }
-//    if (SendCount != count)
-//    {
-//        std::cout << "Error in FillScatterSendBuf: SendCount = " << SendCount << "RealCount = " << count << std::endl;
-//        return 0;
-//    }
     return 1;
 }
 
