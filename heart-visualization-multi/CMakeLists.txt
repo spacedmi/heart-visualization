@@ -7,7 +7,7 @@ include_directories(${MPI_INCLUDE_PATH})
 
 set(SOURCE_EXE main.cpp)
 
-set(SOURCE_LIB Cell MyHeart Solver)
+set(SOURCE_LIB Cell MyHeart Solver DataProcessor)
 
 add_library(staticlib STATIC ${SOURCE_LIB})
 
