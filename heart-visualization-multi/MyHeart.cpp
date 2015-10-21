@@ -28,7 +28,7 @@ void MyHeart::Step(double dt, std::vector<int> cellVector) {
         u = cells[currentIndex].u;
         v = cells[currentIndex].v;
         cells[currentIndex].u1 = u + dt*(u - u*u*u / 3.0 - v + Relation(cells[currentIndex]));
-        cells[currentIndex].v1 = v + dt*(u - param_a)*param_e;
+        cells[currentIndex].v1 = v + dt*(u - cells[currentIndex].a)*cells[currentIndex].e;
 	}
 
     for (int i = 0; i < cellVector.size(); i++) {

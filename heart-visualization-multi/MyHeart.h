@@ -3,8 +3,8 @@
 
 #pragma once
 
-#define param_a -1.1
-#define param_e 0.01
+//#define param_a -1.1
+//#define param_e 0.01
 #define FILE_CELL_ALL "input/AllCellFile"
 
 class MyHeart
