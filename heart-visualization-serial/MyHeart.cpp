@@ -27,7 +27,7 @@ void MyHeart::Step(double dt) {
 		u = cells[i].u;
 		v = cells[i].v;
 		cells[i].u1 = u + dt*(u - u*u*u / 3.0 - v + Relation(cells[i]));
-		cells[i].v1 = v + dt*(u - param_a)*param_e;
+        cells[i].v1 = v + dt*(u - cells[i].a)*cells[i].e;
 	}
 
 	for (int i = 0; i<count; i++) {
@@ -42,7 +42,7 @@ double MyHeart::Relation(Cell a) {
 
 	for (int i = 0; i<a.countOfNeighbors; i++) {
 		b = cells[a.neighbors[i]];
-		res += (b.u - a.u) * Distance(a, b) / a.R;
+        res += (b.u - a.u) /** Distance(a, b) / a.R*/;
 	}
 
 	return res;
