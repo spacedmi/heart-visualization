@@ -42,12 +42,12 @@ double MyHeart::Relation(Cell a) {
 	double res = 0.0;
 	Cell b;
 
-	for (int i = 0; i<a.countOfNeighbors; i++) {
+    for (int i = 0; i < a.countOfNeighbors; i++) {
 		b = cells[a.neighbors[i]];
-		res += (b.u - a.u) * Distance(a, b) / a.R;
+        res += (b.u - a.u) /** Distance(a, b) / a.R*/;
 	}
 
-	return res;
+    return res / a.countOfNeighbors;
 }
 
 void MyHeart::SaveState(int numberOfSnapshot) {
