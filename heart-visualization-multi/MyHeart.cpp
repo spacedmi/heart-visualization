@@ -28,7 +28,7 @@ void MyHeart::Step(double dt, std::vector<int> cellVector) {
         u = cells[currentIndex].u;
         v = cells[currentIndex].v;
         cells[currentIndex].u1 = u + dt*(u - u*u*u / 3.0 - v + Relation(cells[currentIndex]));
-        cells[currentIndex].v1 = v + dt*(u - param_a)*param_e;
+        cells[currentIndex].v1 = v + dt*(u - cells[currentIndex].a)*cells[currentIndex].e;
 	}
 
     for (int i = 0; i < cellVector.size(); i++) {
@@ -42,12 +42,12 @@ double MyHeart::Relation(Cell a) {
 	double res = 0.0;
 	Cell b;
 
-	for (int i = 0; i<a.countOfNeighbors; i++) {
+    for (int i = 0; i < a.countOfNeighbors; i++) {
 		b = cells[a.neighbors[i]];
-		res += (b.u - a.u) * Distance(a, b) / a.R;
+        res += (b.u - a.u) /** Distance(a, b) / a.R*/;
 	}
 
-	return res;
+    return res / a.countOfNeighbors;
 }
 
 void MyHeart::SaveState(int numberOfSnapshot) {
