@@ -22,11 +22,11 @@ void Cell::ScanCellFromFile(FILE *f) {
     switch(odeType)
     {
     case 0:
-        a = -1.3; e = 0.01;
-        u0 = -1.3; v0 = -0.2677;
+        a = -1.2; e = 0.01;
+        u0 = -1.2; v0 = -0.528;
         break;
     case 1:
-        a = -0.5; e = 0.01;
+        a = -0.6; e = 0.01;
         u0 = -1.0; v0 = -0.6667;
         break;
     }

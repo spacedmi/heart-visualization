@@ -1,6 +1,8 @@
 #include "MyHeart.h"
 #include <stdio.h>
 #include <math.h>
+#include "vtkUnstructuredGrid.h"
+#include "vtkCellArray.h"
 
 MyHeart::MyHeart() {
 	isValid = false;
@@ -56,7 +58,7 @@ void MyHeart::SaveState(int numberOfSnapshot) {
 		return;
 	}
 
-    snprintf(snapshotFileName, 52, "%s%d.csv\0", "result/result", numberOfSnapshot);
+    snprintf(snapshotFileName, 52, "%s%d.csv", "result/result", numberOfSnapshot);
 
 	char delimiter = ',';
     FILE* writer1 = fopen(snapshotFileName, "w+");
@@ -69,8 +71,74 @@ void MyHeart::SaveState(int numberOfSnapshot) {
 		fprintf(writer1, "%f%c%f%c%f%c%f\n", cells[i].x, delimiter, cells[i].y, delimiter, cells[i].z, delimiter, cells[i].u);
 	}
 	fclose(writer1);
+
+    // TODO: saving to VTK file
+    SaveStateToVTK();
 }
 
+void MyHeart::SaveStateToVTK()
+{
+//    //vtkPolyData *data = vtkPolyData::New();
+//    vtkUnstructuredGrid *mesh = vtkUnstructuredGrid::New();
+//    vtkPoints *points = vtkPoints::New();
+//    vtkCellArray *cells = vtkCellArray::New();
+
+//    //vtkIdType pointIDs[4];
+
+//    std::vector<point>::const_iterator iterator1 = fpoints.begin();
+
+//    point aux;
+
+//    if ( event_report != NULL ) { event_report->SetMaxTicks(fpoints.size() + fnodes.size()); }
+//    points->SetNumberOfPoints(fpoints.size());
+//    int pointId = 0;
+//    for (;iterator1 != fpoints.end();iterator1++)
+//    {
+//        aux = *iterator1;
+//        points->SetPoint(pointId, aux.coord);
+//        pointId++;
+//    }
+
+//    std::vector<node>::const_iterator iterator2 = fnodes.begin();
+
+//    node aux1;
+
+//    vtkSmartPointer<vtkIdTypeArray> idCells =
+//      vtkSmartPointer<vtkIdTypeArray>::New();
+//    idCells->SetNumberOfComponents(5);
+//    idCells->SetNumberOfTuples(fnodes.size());
+
+//    int cellIndex = 0;
+//    for (;iterator2 != fnodes.end(); iterator2++)
+//    {
+//        aux1 = *iterator2;
+//        vtkIdType * tuple = new vtkIdType[4];
+//        tuple[0] = 4;
+//        tuple[1] = aux1.indexs[0] - 1;
+//        tuple[2] = aux1.indexs[1] - 1;
+//        tuple[3] = aux1.indexs[2] - 1;
+//        tuple[4] = aux1.indexs[3] - 1;
+//        idCells->SetTupleValue(cellIndex, tuple);
+//        cellIndex++;
+//    }
+//    cells->SetCells(fnodes.size(), idCells);
+
+//    mesh->SetPoints(points);
+//    mesh->SetCells(VTK_TETRA, cells);
+
+//    //vtkPolyDataWriter *writer = vtkPolyDataWriter::New();
+//    vtkUnstructuredGridWriter *tetra_writer = vtkUnstructuredGridWriter::New();
+//    tetra_writer->SetFileName( filename );
+
+//    #if VTK_MAJOR_VERSION <= 5
+//        tetra_writer->SetInput(mesh);
+//    #else
+//        tetra_writer->SetInputData(mesh);
+//    #endif
+
+//    tetra_writer->Write();
+//    tetra_writer->Delete( );
+}
 
 bool MyHeart::ScanHeartFromFile() {
     FILE *f = fopen(FILE_CELL_ALL, "rb");
