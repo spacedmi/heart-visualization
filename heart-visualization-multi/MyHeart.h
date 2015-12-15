@@ -20,8 +20,9 @@ public:
 
 private:
 	bool isValid;
+    char *snapshotFileName;
 	bool ScanHeartFromFile();
-	char *snapshotFileName;
+    void SaveStateToVTK();
 
 	double Distance(Cell a, Cell b);
 	double sqrDistance(Cell a, Cell b);
