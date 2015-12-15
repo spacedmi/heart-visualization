@@ -2,7 +2,7 @@
 #include "MyHeart.h"
 
 #define D_dt 0.01
-#define D_maxT 600.0
+#define D_maxT 1500.0
 #define D_count_dt_till_save 100
 
 int main(int argc, char *argv[])

@@ -49,7 +49,7 @@ double MyHeart::Relation(Cell a) {
         res += (b.u - a.u) /** Distance(a, b) / a.R*/;
 	}
 
-    return res / a.countOfNeighbors;
+    return res / 4;
 }
 
 void MyHeart::SaveState(int numberOfSnapshot) {
