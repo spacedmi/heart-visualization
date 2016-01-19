@@ -5,7 +5,7 @@ project(heart-visualization-multi)
 find_package(MPI REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})
 
-set(VTK_DIR "~/libs/VTK-build")
+set(VTK_DIR "VTK-build")
 find_package(VTK REQUIRED)
 include(${VTK_USE_FILE})
 

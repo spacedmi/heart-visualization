@@ -155,23 +155,20 @@ void MyHeart::SaveStateToVTK(int numberOfSnapshot)
 
 void MyHeart::SaveStateToBIN(int numberOfSnapshot)
 {
-    // TODO: simple bin output
+        snprintf(snapshotFileName, 52, "%s%d.txt", "result/result", numberOfSnapshot);
 
-    //    snprintf(snapshotFileName, 52, "%s%d.csv", "result/result", numberOfSnapshot);
+        char delimiter = ',';
+        FILE* writer1 = fopen(snapshotFileName, "w+");
+        if (writer1 == NULL) {
+            printf("Can't open file %s. Please create folder 'result'\n", snapshotFileName);
+            return;
+        }
 
-    //	char delimiter = ',';
-    //    FILE* writer1 = fopen(snapshotFileName, "w+");
-    //	if (writer1 == NULL) {
-    //        printf("Can't open file %s. Please create folder 'result'\n", snapshotFileName);
-    //		return;
-    //	}
+        for (int i = 0; i < count; i++) {
+            fprintf(writer1, "%i\n", (cells[i].u < 0) ? 0 : 1);
+        }
 
-    //	fprintf(writer1, "x%cy%cz%cscalar\n", delimiter, delimiter, delimiter);
-    //	for (int i = 0; i < count; i++) {
-    //		fprintf(writer1, "%f%c%f%c%f%c%f\n", cells[i].x, delimiter, cells[i].y, delimiter, cells[i].z, delimiter, cells[i].u);
-    //	}
-
-    //	fclose(writer1);
+        fclose(writer1);
 }
 
 bool MyHeart::ScanHeartFromFile() {
