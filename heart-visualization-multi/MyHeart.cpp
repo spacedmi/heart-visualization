@@ -3,6 +3,10 @@
 #include <math.h>
 #include "vtkUnstructuredGrid.h"
 #include "vtkCellArray.h"
+#include <vtkSmartPointer.h>
+#include <vtkUnstructuredGridWriter.h>
+#include <vtkFloatArray.h>
+#include <vtkPointData.h>
 
 MyHeart::MyHeart() {
 	isValid = false;
@@ -58,86 +62,79 @@ void MyHeart::SaveState(int numberOfSnapshot) {
 		return;
 	}
 
-    snprintf(snapshotFileName, 52, "%s%d.csv", "result/result", numberOfSnapshot);
+//    snprintf(snapshotFileName, 52, "%s%d.csv", "result/result", numberOfSnapshot);
 
-	char delimiter = ',';
-    FILE* writer1 = fopen(snapshotFileName, "w+");
-	if (writer1 == NULL) {
-        printf("Can't open file %s. Please create folder 'result'\n", snapshotFileName);
-		return;
-	}
-	fprintf(writer1, "x%cy%cz%cscalar\n", delimiter, delimiter, delimiter);
-	for (int i = 0; i < count; i++) {
-		fprintf(writer1, "%f%c%f%c%f%c%f\n", cells[i].x, delimiter, cells[i].y, delimiter, cells[i].z, delimiter, cells[i].u);
-	}
-	fclose(writer1);
+//	char delimiter = ',';
+//    FILE* writer1 = fopen(snapshotFileName, "w+");
+//	if (writer1 == NULL) {
+//        printf("Can't open file %s. Please create folder 'result'\n", snapshotFileName);
+//		return;
+//	}
+//	fprintf(writer1, "x%cy%cz%cscalar\n", delimiter, delimiter, delimiter);
+//	for (int i = 0; i < count; i++) {
+//		fprintf(writer1, "%f%c%f%c%f%c%f\n", cells[i].x, delimiter, cells[i].y, delimiter, cells[i].z, delimiter, cells[i].u);
+//	}
+//	fclose(writer1);
 
     // TODO: saving to VTK file
-    SaveStateToVTK();
+    SaveStateToVTK(numberOfSnapshot);
 }
 
-void MyHeart::SaveStateToVTK()
+void MyHeart::SaveStateToVTK(int numberOfSnapshot)
 {
-//    //vtkPolyData *data = vtkPolyData::New();
-//    vtkUnstructuredGrid *mesh = vtkUnstructuredGrid::New();
-//    vtkPoints *points = vtkPoints::New();
-//    vtkCellArray *cells = vtkCellArray::New();
+    snprintf(snapshotFileName, 52, "%s%d.vtk", "result/VTKresult", numberOfSnapshot);
 
-//    //vtkIdType pointIDs[4];
-
-//    std::vector<point>::const_iterator iterator1 = fpoints.begin();
-
-//    point aux;
+    vtkUnstructuredGrid *mesh = vtkUnstructuredGrid::New();
+    vtkPoints *points = vtkPoints::New();
+    vtkCellArray *vtkCells = vtkCellArray::New();
 
 //    if ( event_report != NULL ) { event_report->SetMaxTicks(fpoints.size() + fnodes.size()); }
-//    points->SetNumberOfPoints(fpoints.size());
-//    int pointId = 0;
-//    for (;iterator1 != fpoints.end();iterator1++)
-//    {
-//        aux = *iterator1;
-//        points->SetPoint(pointId, aux.coord);
-//        pointId++;
-//    }
+    points->SetNumberOfPoints(count);
+    for (int i = 0; i < count; i++)
+    {
+        points->SetPoint(i, cells[i].x, cells[i].y, cells[i].z);
+    }
 
-//    std::vector<node>::const_iterator iterator2 = fnodes.begin();
+    vtkSmartPointer<vtkIdTypeArray> idCells =
+      vtkSmartPointer<vtkIdTypeArray>::New();
+    idCells->SetNumberOfComponents(5);
+    idCells->SetNumberOfTuples(tetraCount);
 
-//    node aux1;
+    for (int i = 0; i < tetraCount; i++)
+    {
+        vtkIdType * tuple = new vtkIdType[4];
+        tuple[0] = 4;
+        tuple[1] = tetrahedrons[i][0];
+        tuple[2] = tetrahedrons[i][1];
+        tuple[3] = tetrahedrons[i][2];
+        tuple[4] = tetrahedrons[i][3];
+        idCells->SetTupleValue(i, tuple);
+    }
+    vtkCells->SetCells(tetraCount, idCells);
 
-//    vtkSmartPointer<vtkIdTypeArray> idCells =
-//      vtkSmartPointer<vtkIdTypeArray>::New();
-//    idCells->SetNumberOfComponents(5);
-//    idCells->SetNumberOfTuples(fnodes.size());
+    vtkSmartPointer<vtkFloatArray> scalar=
+          vtkSmartPointer<vtkFloatArray>::New();
+    scalar->SetNumberOfComponents(1);
+    scalar->SetNumberOfValues(count);
+    for (int i = 0; i < count; i++)
+        scalar->SetValue(i, (float)cells[i].u);
 
-//    int cellIndex = 0;
-//    for (;iterator2 != fnodes.end(); iterator2++)
-//    {
-//        aux1 = *iterator2;
-//        vtkIdType * tuple = new vtkIdType[4];
-//        tuple[0] = 4;
-//        tuple[1] = aux1.indexs[0] - 1;
-//        tuple[2] = aux1.indexs[1] - 1;
-//        tuple[3] = aux1.indexs[2] - 1;
-//        tuple[4] = aux1.indexs[3] - 1;
-//        idCells->SetTupleValue(cellIndex, tuple);
-//        cellIndex++;
-//    }
-//    cells->SetCells(fnodes.size(), idCells);
+    mesh->SetPoints(points);
+    mesh->SetCells(VTK_TETRA, vtkCells);
+    mesh->GetPointData()->SetScalars(scalar);
 
-//    mesh->SetPoints(points);
-//    mesh->SetCells(VTK_TETRA, cells);
+    vtkUnstructuredGridWriter *tetra_writer = vtkUnstructuredGridWriter::New();
+    tetra_writer->SetFileName( snapshotFileName );
+    tetra_writer->SetFileTypeToBinary();
 
-//    //vtkPolyDataWriter *writer = vtkPolyDataWriter::New();
-//    vtkUnstructuredGridWriter *tetra_writer = vtkUnstructuredGridWriter::New();
-//    tetra_writer->SetFileName( filename );
+    #if VTK_MAJOR_VERSION <= 5
+        tetra_writer->SetInput(mesh);
+    #else
+        tetra_writer->SetInputData(mesh);
+    #endif
 
-//    #if VTK_MAJOR_VERSION <= 5
-//        tetra_writer->SetInput(mesh);
-//    #else
-//        tetra_writer->SetInputData(mesh);
-//    #endif
-
-//    tetra_writer->Write();
-//    tetra_writer->Delete( );
+    tetra_writer->Write();
+    tetra_writer->Delete( );
 }
 
 bool MyHeart::ScanHeartFromFile() {
@@ -156,6 +153,30 @@ bool MyHeart::ScanHeartFromFile() {
 	fclose(f);
 	printf(" + Scanned file %s\n", FILE_CELL_ALL);
 
+    // read tetrahedron
+    FILE *tetrF = fopen(FILE_TETRAHEDRON, "rb");
+    if (tetrF == NULL) {
+        printf(" - Can't find file %s\n", FILE_TETRAHEDRON);
+        return false;
+    }
+
+    int temp;
+    fscanf(tetrF, "%i", &tetraCount);
+    fscanf(tetrF, "%i %i", &temp, &temp);
+
+    tetrahedrons.resize(tetraCount);
+      for (int i = 0; i < tetraCount; ++i)
+        tetrahedrons[i].resize(4);
+
+    for (int i = 0; i < tetraCount; i++) {
+        fscanf(tetrF, "%i", &temp);
+        fscanf(tetrF, "%i", &tetrahedrons[i][0]);
+        fscanf(tetrF, "%i", &tetrahedrons[i][1]);
+        fscanf(tetrF, "%i", &tetrahedrons[i][2]);
+        fscanf(tetrF, "%i", &tetrahedrons[i][3]);
+    }
+
+    fclose(tetrF);
 	return true;
 }
 

@@ -4,6 +4,7 @@
 #pragma once
 
 #define FILE_CELL_ALL "input/AllCellFile"
+#define FILE_TETRAHEDRON "input/tetrahedron"
 
 class MyHeart
 {
@@ -15,14 +16,15 @@ public:
 	bool SetUp();
     void Step(double dt, std::vector<int> cellVector);
 	void SaveState(int numberOfSnapshot);
-    Cell *cells;
-    int count;
+    Cell* cells;
+    std::vector<std::vector<int> > tetrahedrons;
+    int count, tetraCount;
 
 private:
 	bool isValid;
     char *snapshotFileName;
 	bool ScanHeartFromFile();
-    void SaveStateToVTK();
+    void SaveStateToVTK(int numberOfSnapshot);
 
 	double Distance(Cell a, Cell b);
 	double sqrDistance(Cell a, Cell b);
