@@ -13,7 +13,7 @@ public:
 	~MyHeart();
 
 	// IODE
-	bool SetUp();
+    bool SetUp(int _outPutMode);
     void Step(double dt, std::vector<int> cellVector);
 	void SaveState(int numberOfSnapshot);
     Cell* cells;
@@ -21,10 +21,13 @@ public:
     int count, tetraCount;
 
 private:
+    int outPutMode;
 	bool isValid;
     char *snapshotFileName;
 	bool ScanHeartFromFile();
+    void SaveStateToCSV(int numberOfSnapshot);
     void SaveStateToVTK(int numberOfSnapshot);
+    void SaveStateToBIN(int numberOfSnapshot);
 
 	double Distance(Cell a, Cell b);
 	double sqrDistance(Cell a, Cell b);

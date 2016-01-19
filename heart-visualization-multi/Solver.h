@@ -8,7 +8,7 @@
 class Solver
 {
 public:
-    Solver(MyHeart* _ode, double _dt, double _maxT, int _countDtTillSave);
+    Solver(MyHeart* _ode, double _dt, double _maxT, int _countDtTillSave, int _outPutMode);
 	~Solver();
 
     void MultiIntegrate();
@@ -18,5 +18,6 @@ private:
     double dt;
     double maxT;
     int countDtTillSave;
+    int outPutMode;
 };
 

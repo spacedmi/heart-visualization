@@ -10,10 +10,12 @@ int main(int argc, char *argv[])
     MPI_Init(&argc, &argv);
 
     double D_maxT = 100.0;
+    int outPutMode = 0;
 
-    if (argc > 1)
+    if (argc > 2)
     {
         D_maxT = atof(argv[1]);
+        outPutMode = atof(argv[2]);
     }
     else
     {
@@ -22,13 +24,16 @@ int main(int argc, char *argv[])
 
         if (ProcRank == 0)
         {
-            printf("WARNING: Program needs 1 argument: computing time! Starting with default D_maxT...\n");
+            printf("WARNING: Program needs 2 arguments: computing time! Starting with default parameters...\n");
         }
     }
 
+    if ((outPutMode < 0) && (outPutMode > 2))
+        outPutMode = 0; // 0 - csv, 1 - vtk, 2 - txt bin node state
+
     MyHeart* ode = new MyHeart();
 
-    Solver solver(ode, D_dt, D_maxT, D_count_dt_till_save);
+    Solver solver(ode, D_dt, D_maxT, D_count_dt_till_save, outPutMode);
 
     solver.MultiIntegrate();
 

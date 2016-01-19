@@ -11,13 +11,15 @@
 MyHeart::MyHeart() {
 	isValid = false;
 	snapshotFileName = new char[52];
+    outPutMode = 0;
 }
 
 MyHeart::~MyHeart() {
 	if (snapshotFileName) delete snapshotFileName;
 }
 
-bool MyHeart::SetUp() {
+bool MyHeart::SetUp(int _outPutMode) {
+    outPutMode = _outPutMode;
 	isValid = ScanHeartFromFile();
 	return isValid;
 }
@@ -62,22 +64,37 @@ void MyHeart::SaveState(int numberOfSnapshot) {
 		return;
 	}
 
-//    snprintf(snapshotFileName, 52, "%s%d.csv", "result/result", numberOfSnapshot);
+    switch (outPutMode)
+    {
+    case 0:
+        SaveStateToCSV(numberOfSnapshot);
+        break;
+    case 1:
+        SaveStateToVTK(numberOfSnapshot);
+        break;
+    case 2:
+        SaveStateToBIN(numberOfSnapshot);
+        break;
+    }
+}
 
-//	char delimiter = ',';
-//    FILE* writer1 = fopen(snapshotFileName, "w+");
-//	if (writer1 == NULL) {
-//        printf("Can't open file %s. Please create folder 'result'\n", snapshotFileName);
-//		return;
-//	}
-//	fprintf(writer1, "x%cy%cz%cscalar\n", delimiter, delimiter, delimiter);
-//	for (int i = 0; i < count; i++) {
-//		fprintf(writer1, "%f%c%f%c%f%c%f\n", cells[i].x, delimiter, cells[i].y, delimiter, cells[i].z, delimiter, cells[i].u);
-//	}
-//	fclose(writer1);
+void MyHeart::SaveStateToCSV(int numberOfSnapshot)
+{
+    snprintf(snapshotFileName, 52, "%s%d.csv", "result/result", numberOfSnapshot);
 
-    // TODO: saving to VTK file
-    SaveStateToVTK(numberOfSnapshot);
+    char delimiter = ',';
+    FILE* writer1 = fopen(snapshotFileName, "w+");
+    if (writer1 == NULL) {
+        printf("Can't open file %s. Please create folder 'result'\n", snapshotFileName);
+        return;
+    }
+
+    fprintf(writer1, "x%cy%cz%cscalar\n", delimiter, delimiter, delimiter);
+    for (int i = 0; i < count; i++) {
+        fprintf(writer1, "%f%c%f%c%f%c%f\n", cells[i].x, delimiter, cells[i].y, delimiter, cells[i].z, delimiter, cells[i].u);
+    }
+
+    fclose(writer1);
 }
 
 void MyHeart::SaveStateToVTK(int numberOfSnapshot)
@@ -88,7 +105,6 @@ void MyHeart::SaveStateToVTK(int numberOfSnapshot)
     vtkPoints *points = vtkPoints::New();
     vtkCellArray *vtkCells = vtkCellArray::New();
 
-//    if ( event_report != NULL ) { event_report->SetMaxTicks(fpoints.size() + fnodes.size()); }
     points->SetNumberOfPoints(count);
     for (int i = 0; i < count; i++)
     {
@@ -135,6 +151,27 @@ void MyHeart::SaveStateToVTK(int numberOfSnapshot)
 
     tetra_writer->Write();
     tetra_writer->Delete( );
+}
+
+void MyHeart::SaveStateToBIN(int numberOfSnapshot)
+{
+    // TODO: simple bin output
+
+    //    snprintf(snapshotFileName, 52, "%s%d.csv", "result/result", numberOfSnapshot);
+
+    //	char delimiter = ',';
+    //    FILE* writer1 = fopen(snapshotFileName, "w+");
+    //	if (writer1 == NULL) {
+    //        printf("Can't open file %s. Please create folder 'result'\n", snapshotFileName);
+    //		return;
+    //	}
+
+    //	fprintf(writer1, "x%cy%cz%cscalar\n", delimiter, delimiter, delimiter);
+    //	for (int i = 0; i < count; i++) {
+    //		fprintf(writer1, "%f%c%f%c%f%c%f\n", cells[i].x, delimiter, cells[i].y, delimiter, cells[i].z, delimiter, cells[i].u);
+    //	}
+
+    //	fclose(writer1);
 }
 
 bool MyHeart::ScanHeartFromFile() {

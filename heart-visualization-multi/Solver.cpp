@@ -4,11 +4,12 @@
 #include <fstream>
 #include <vector>
 
-Solver::Solver(MyHeart* _ode, double _dt, double _maxT, int _countDtTillSave) {
+Solver::Solver(MyHeart* _ode, double _dt, double _maxT, int _countDtTillSave, int _outPutMode) {
 	ode = _ode;
 	dt = _dt;
 	maxT = _maxT;
 	countDtTillSave = _countDtTillSave;
+    outPutMode = _outPutMode;
 }
 
 Solver::~Solver() {
@@ -16,7 +17,7 @@ Solver::~Solver() {
 
 void Solver::MultiIntegrate()
 {
-    if (!ode->SetUp())
+    if (!ode->SetUp(outPutMode))
     {
 		printf("Can't set up ODE\n");
 		return;
