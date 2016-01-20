@@ -1,13 +1,18 @@
 #include "MyHeart.h"
 #include <stdio.h>
 #include <math.h>
-//#include "vtkUnstructuredGrid.h"
-//#include "vtkCellArray.h"
-//#include <vtkSmartPointer.h>
-//#include <vtkUnstructuredGridWriter.h>
-//#include <vtkFloatArray.h>
-//#include <vtkPointData.h>
+#define VTK 0
 
+#ifdef VTK
+
+#include "vtkUnstructuredGrid.h"
+#include "vtkCellArray.h"
+#include <vtkSmartPointer.h>
+#include <vtkUnstructuredGridWriter.h>
+#include <vtkFloatArray.h>
+#include <vtkPointData.h>
+
+#endif
 MyHeart::MyHeart() {
 	isValid = false;
 	snapshotFileName = new char[52];
@@ -99,65 +104,67 @@ void MyHeart::SaveStateToCSV(int numberOfSnapshot)
 
 void MyHeart::SaveStateToVTK(int numberOfSnapshot)
 {
-//    snprintf(snapshotFileName, 52, "%s%d.vtk", "result/VTKresult", numberOfSnapshot);
+    #ifdef VTK
+        snprintf(snapshotFileName, 52, "%s%d.vtk", "result/VTKresult", numberOfSnapshot);
 
-//    vtkUnstructuredGrid *mesh = vtkUnstructuredGrid::New();
-//    vtkPoints *points = vtkPoints::New();
-//    vtkCellArray *vtkCells = vtkCellArray::New();
+        vtkUnstructuredGrid *mesh = vtkUnstructuredGrid::New();
+        vtkPoints *points = vtkPoints::New();
+        vtkCellArray *vtkCells = vtkCellArray::New();
 
-//    points->SetNumberOfPoints(count);
-//    for (int i = 0; i < count; i++)
-//    {
-//        points->SetPoint(i, cells[i].x, cells[i].y, cells[i].z);
-//    }
+        points->SetNumberOfPoints(count);
+        for (int i = 0; i < count; i++)
+        {
+            points->SetPoint(i, cells[i].x, cells[i].y, cells[i].z);
+        }
 
-//    vtkSmartPointer<vtkIdTypeArray> idCells =
-//      vtkSmartPointer<vtkIdTypeArray>::New();
-//    idCells->SetNumberOfComponents(5);
-//    idCells->SetNumberOfTuples(tetraCount);
+        vtkSmartPointer<vtkIdTypeArray> idCells =
+          vtkSmartPointer<vtkIdTypeArray>::New();
+        idCells->SetNumberOfComponents(5);
+        idCells->SetNumberOfTuples(tetraCount);
 
-//    for (int i = 0; i < tetraCount; i++)
-//    {
-//        vtkIdType * tuple = new vtkIdType[4];
-//        tuple[0] = 4;
-//        tuple[1] = tetrahedrons[i][0];
-//        tuple[2] = tetrahedrons[i][1];
-//        tuple[3] = tetrahedrons[i][2];
-//        tuple[4] = tetrahedrons[i][3];
-//        idCells->SetTupleValue(i, tuple);
-//    }
-//    vtkCells->SetCells(tetraCount, idCells);
+        for (int i = 0; i < tetraCount; i++)
+        {
+            vtkIdType * tuple = new vtkIdType[4];
+            tuple[0] = 4;
+            tuple[1] = tetrahedrons[i][0];
+            tuple[2] = tetrahedrons[i][1];
+            tuple[3] = tetrahedrons[i][2];
+            tuple[4] = tetrahedrons[i][3];
+            idCells->SetTupleValue(i, tuple);
+        }
+        vtkCells->SetCells(tetraCount, idCells);
 
-//    vtkSmartPointer<vtkFloatArray> scalar=
-//          vtkSmartPointer<vtkFloatArray>::New();
-//    scalar->SetNumberOfComponents(1);
-//    scalar->SetNumberOfValues(count);
-//    for (int i = 0; i < count; i++)
-//        scalar->SetValue(i, (float)cells[i].u);
+        vtkSmartPointer<vtkFloatArray> scalar=
+              vtkSmartPointer<vtkFloatArray>::New();
+        scalar->SetNumberOfComponents(1);
+        scalar->SetNumberOfValues(count);
+        for (int i = 0; i < count; i++)
+            scalar->SetValue(i, (float)cells[i].u);
 
-//    mesh->SetPoints(points);
-//    mesh->SetCells(VTK_TETRA, vtkCells);
-//    mesh->GetPointData()->SetScalars(scalar);
+        mesh->SetPoints(points);
+        mesh->SetCells(VTK_TETRA, vtkCells);
+        mesh->GetPointData()->SetScalars(scalar);
 
-//    vtkUnstructuredGridWriter *tetra_writer = vtkUnstructuredGridWriter::New();
-//    tetra_writer->SetFileName( snapshotFileName );
-//    tetra_writer->SetFileTypeToBinary();
+        vtkUnstructuredGridWriter *tetra_writer = vtkUnstructuredGridWriter::New();
+        tetra_writer->SetFileName( snapshotFileName );
+        tetra_writer->SetFileTypeToBinary();
 
-//    #if VTK_MAJOR_VERSION <= 5
-//        tetra_writer->SetInput(mesh);
-//    #else
-//        tetra_writer->SetInputData(mesh);
-//    #endif
+        #if VTK_MAJOR_VERSION <= 5
+            tetra_writer->SetInput(mesh);
+        #else
+            tetra_writer->SetInputData(mesh);
+        #endif
 
-//    tetra_writer->Write();
-//    tetra_writer->Delete( );
+        tetra_writer->Write();
+        tetra_writer->Delete( );
+
+    #endif
 }
 
 void MyHeart::SaveStateToBIN(int numberOfSnapshot)
 {
         snprintf(snapshotFileName, 52, "%s%d.txt", "result/result", numberOfSnapshot);
 
-        char delimiter = ',';
         FILE* writer1 = fopen(snapshotFileName, "w+");
         if (writer1 == NULL) {
             printf("Can't open file %s. Please create folder 'result'\n", snapshotFileName);
@@ -165,7 +172,7 @@ void MyHeart::SaveStateToBIN(int numberOfSnapshot)
         }
 
         for (int i = 0; i < count; i++) {
-            fprintf(writer1, "%i\n", (cells[i].u < 0) ? 0 : 1);
+            fprintf(writer1, "%d\n", (cells[i].u < 0) ? 0 : 1);
         }
 
         fclose(writer1);
