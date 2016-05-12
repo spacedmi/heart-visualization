@@ -1,25 +1,19 @@
-#pragma once
+#include "Cell.h"
+#include "MyHeart.h"
 
-class IODE
-{
-public:
-    virtual bool SetUp() = 0;
-    virtual void Step(double dt) = 0;
-    virtual void SaveState(int numberOfSnapshot) = 0;
-};
+#pragma once
 
 class Solver
 {
 public:
-	Solver(IODE* _ode, double _dt, double _maxT, int _countDtTillSave);
+    Solver(MyHeart* _ode, double _dt, double _maxT, int _countDtTillSave, int _outPutMode);
 	~Solver();
 
     void Integrate();
-
 private:
-	IODE *ode;
+    MyHeart *ode;
     double dt;
     double maxT;
     int countDtTillSave;
+    int outPutMode;
 };
-

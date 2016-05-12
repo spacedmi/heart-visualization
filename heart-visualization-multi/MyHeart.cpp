@@ -1,9 +1,6 @@
 #include "MyHeart.h"
 #include <stdio.h>
 #include <math.h>
-#define VTK 0
-
-#ifdef VTK
 
 #include "vtkUnstructuredGrid.h"
 #include "vtkCellArray.h"
@@ -12,7 +9,6 @@
 #include <vtkFloatArray.h>
 #include <vtkPointData.h>
 
-#endif
 MyHeart::MyHeart() {
 	isValid = false;
 	snapshotFileName = new char[52];
@@ -40,7 +36,7 @@ void MyHeart::Step(double dt, std::vector<int> cellVector) {
         currentIndex = cellVector[i];
         u = cells[currentIndex].u;
         v = cells[currentIndex].v;
-        cells[currentIndex].u1 = u + dt*(u - u*u*u / 3.0 - v + Relation(cells[currentIndex]));
+        cells[currentIndex].u1 = u + dt*(u - u*u*u / 3.0 - v + RelationMassAndStiff (mesh->points[i]));
         cells[currentIndex].v1 = v + dt*(u - cells[currentIndex].a)*cells[currentIndex].e;
 	}
 
@@ -49,6 +45,8 @@ void MyHeart::Step(double dt, std::vector<int> cellVector) {
         cells[currentIndex].u = cells[currentIndex].u1;
         cells[currentIndex].v = cells[currentIndex].v1;
 	}
+
+    stepCount++;
 }
 
 double MyHeart::Relation(Cell a) {
@@ -61,6 +59,34 @@ double MyHeart::Relation(Cell a) {
 	}
 
     return res / 4;
+}
+
+double MyHeart::RelationMassAndStiff(Point point) {
+    double S = 0.0;
+    double M = 0.0;
+
+    for (int i = 0; i < point.mass.size(); i++)
+    {
+        M += point.mass[i];
+    }
+    for (int i = 0; i < point.stiff.size(); i++)
+    {
+        S += point.stiff[i] * cells[point.neighbours[i]].u;
+    }
+
+    if (point.id == 8264)
+        return 0;
+//    if ((abs(-(S / M) / 300.0) > 3) || (abs(-(S / M) / 300.0) < -3))
+//        printf("step = %i N = %i S = %lf M = %lf -S/M = %lf u = %lf\n", stepCount, point.id, S, M, -(S / M) / 300.0, cells[point.id].u);
+
+    return -(S / M) / 300.0;
+}
+
+int MyHeart::getElemNumber() {
+    return tetraCount;
+}
+int MyHeart::getNodeNumber() {
+    return count;
 }
 
 void MyHeart::SaveState(int numberOfSnapshot) {
@@ -104,7 +130,6 @@ void MyHeart::SaveStateToCSV(int numberOfSnapshot)
 
 void MyHeart::SaveStateToVTK(int numberOfSnapshot)
 {
-    #ifdef VTK
         snprintf(snapshotFileName, 52, "%s%d.vtk", "result/VTKresult", numberOfSnapshot);
 
         vtkUnstructuredGrid *mesh = vtkUnstructuredGrid::New();
@@ -157,8 +182,6 @@ void MyHeart::SaveStateToVTK(int numberOfSnapshot)
 
         tetra_writer->Write();
         tetra_writer->Delete( );
-
-    #endif
 }
 
 void MyHeart::SaveStateToBIN(int numberOfSnapshot)
@@ -179,6 +202,10 @@ void MyHeart::SaveStateToBIN(int numberOfSnapshot)
 }
 
 bool MyHeart::ScanHeartFromFile() {
+    mesh = new Mesh(FILE_MESH, Mesh::READ_MODE_TXT);
+    mesh->find_neighbours();
+    mesh->calc_fem_matrices();
+
     FILE *f = fopen(FILE_CELL_ALL, "rb");
 	if (f == NULL) {
 		printf(" - Can't find file %s\n", FILE_CELL_ALL);

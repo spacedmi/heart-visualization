@@ -2,8 +2,8 @@
 #include "MyHeart.h"
 #include <stdlib.h>
 
-#define D_dt 0.01
-#define D_count_dt_till_save 100
+#define D_dt 0.005
+#define D_count_dt_till_save 200
 
 int main(int argc, char *argv[])
 {
@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 
         if (ProcRank == 0)
         {
-            printf("WARNING: Program needs 2 arguments: computing time! Starting with default parameters...\n");
+            printf("WARNING: Program needs 2 arguments: computing time and output mode (from 0 to 2)! Starting with default parameters...\n");
         }
     }
 
@@ -32,9 +32,7 @@ int main(int argc, char *argv[])
         outPutMode = 0; // 0 - csv, 1 - vtk, 2 - txt bin node state
 
     MyHeart* ode = new MyHeart();
-
     Solver solver(ode, D_dt, D_maxT, D_count_dt_till_save, outPutMode);
-
     solver.MultiIntegrate();
 
     MPI_Finalize();

@@ -1,4 +1,4 @@
-#include "mpi.h"
+#include <mpi.h>
 #include "Cell.h"
 #include "MyHeart.h"
 #include "DataProcessor.h"
@@ -13,6 +13,7 @@ public:
 
     void MultiIntegrate();
 
+    void SetUpMassAndStiff();
 private:
     MyHeart *ode;
     double dt;

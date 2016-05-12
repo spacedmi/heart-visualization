@@ -2,16 +2,31 @@
 #include <stdio.h>
 #include <math.h>
 
+#define VTK 0
+
+#ifdef VTK
+
+#include "vtkUnstructuredGrid.h"
+#include "vtkCellArray.h"
+#include <vtkSmartPointer.h>
+#include <vtkUnstructuredGridWriter.h>
+#include <vtkFloatArray.h>
+#include <vtkPointData.h>
+
+#endif
+
 MyHeart::MyHeart() {
 	isValid = false;
 	snapshotFileName = new char[52];
+    outPutMode = 0;
 }
 
 MyHeart::~MyHeart() {
 	if (snapshotFileName) delete snapshotFileName;
 }
 
-bool MyHeart::SetUp() {
+bool MyHeart::SetUp(int _outPutMode) {
+    outPutMode = _outPutMode;
 	isValid = ScanHeartFromFile();
 	return isValid;
 }
@@ -26,7 +41,7 @@ void MyHeart::Step(double dt) {
 	for (int i = 0; i<count; i++) {
 		u = cells[i].u;
 		v = cells[i].v;
-		cells[i].u1 = u + dt*(u - u*u*u / 3.0 - v + Relation(cells[i]));
+        cells[i].u1 = u + dt*(u - u*u*u / 3.0 - v + RelationMassAndStiff (mesh->points[i]));
         cells[i].v1 = v + dt*(u - cells[i].a)*cells[i].e;
 	}
 
@@ -34,6 +49,8 @@ void MyHeart::Step(double dt) {
 		cells[i].u = cells[i].u1;
 		cells[i].v = cells[i].v1;
 	}
+
+    stepCount++;
 }
 
 double MyHeart::Relation(Cell a) {
@@ -45,48 +62,194 @@ double MyHeart::Relation(Cell a) {
         res += (b.u - a.u) /** Distance(a, b) / a.R*/;
 	}
 
-	return res;
+    return res / 4;
+}
+
+double MyHeart::RelationMassAndStiff(Point point) {
+    double S = 0.0;
+    double M = 0.0;
+
+    for (int i = 0; i < point.neighbours.size(); i++)
+    {
+        M += point.mass[i];
+        S += (double)point.stiff[i] * cells[point.neighbours[i]].u;
+    }
+
+    if (point.id == 8264)
+        return 0;
+    if ((abs(-(S / M) / 165.0) > 3) || (abs(-(S / M) / 165.0) < -3))
+        printf("step = %i N = %i S = %lf M = %lf -S/M = %lf u = %lf\n", stepCount, point.id, S, M, -(S / M) / 165.0, cells[point.id].u);
+
+    return -(S / M) / 165.0;
 }
 
 void MyHeart::SaveState(int numberOfSnapshot) {
-	if (!isValid) {
-		printf("Heart is not valid\n");
-		return;
-	}
+    if (!isValid) {
+        printf("Heart is not valid\n");
+        return;
+    }
 
-    snprintf(snapshotFileName, 52, "%s%d.csv\0", "result/result", numberOfSnapshot);
-
-	char delimiter = ',';
-    FILE* writer1 = fopen(snapshotFileName, "w+");
-	if (writer1 == NULL) {
-        printf("Can't open file %s. Please create folder 'result'\n", snapshotFileName);
-		return;
-	}
-	fprintf(writer1, "x%cy%cz%cscalar\n", delimiter, delimiter, delimiter);
-	for (int i = 0; i < count; i++) {
-		fprintf(writer1, "%f%c%f%c%f%c%f\n", cells[i].x, delimiter, cells[i].y, delimiter, cells[i].z, delimiter, cells[i].u);
-	}
-	fclose(writer1);
+    switch (outPutMode)
+    {
+    case 0:
+        SaveStateToCSV(numberOfSnapshot);
+        break;
+    case 1:
+        SaveStateToVTK(numberOfSnapshot);
+        break;
+    case 2:
+        SaveStateToBIN(numberOfSnapshot);
+        break;
+    }
 }
 
+void MyHeart::SaveStateToCSV(int numberOfSnapshot)
+{
+    snprintf(snapshotFileName, 52, "%s%d.csv", "result/result", numberOfSnapshot);
+
+    char delimiter = ',';
+    FILE* writer1 = fopen(snapshotFileName, "w+");
+    if (writer1 == NULL) {
+        printf("Can't open file %s. Please create folder 'result'\n", snapshotFileName);
+        return;
+    }
+
+    fprintf(writer1, "x%cy%cz%cscalar\n", delimiter, delimiter, delimiter);
+    for (int i = 0; i < count; i++) {
+        fprintf(writer1, "%f%c%f%c%f%c%f\n", cells[i].x, delimiter, cells[i].y, delimiter, cells[i].z, delimiter, cells[i].u);
+    }
+
+    fclose(writer1);
+}
+
+void MyHeart::SaveStateToVTK(int numberOfSnapshot)
+{
+#ifdef VTK
+    snprintf(snapshotFileName, 52, "%s%d.vtk", "result/VTKresult", numberOfSnapshot);
+
+    vtkUnstructuredGrid *mesh = vtkUnstructuredGrid::New();
+    vtkPoints *points = vtkPoints::New();
+    vtkCellArray *vtkCells = vtkCellArray::New();
+
+    points->SetNumberOfPoints(count);
+    for (int i = 0; i < count; i++)
+    {
+        points->SetPoint(i, cells[i].x, cells[i].y, cells[i].z);
+    }
+
+    vtkSmartPointer<vtkIdTypeArray> idCells =
+      vtkSmartPointer<vtkIdTypeArray>::New();
+    idCells->SetNumberOfComponents(5);
+    idCells->SetNumberOfTuples(tetraCount);
+
+    for (int i = 0; i < tetraCount; i++)
+    {
+        vtkIdType * tuple = new vtkIdType[4];
+        tuple[0] = 4;
+        tuple[1] = tetrahedrons[i][0];
+        tuple[2] = tetrahedrons[i][1];
+        tuple[3] = tetrahedrons[i][2];
+        tuple[4] = tetrahedrons[i][3];
+        idCells->SetTupleValue(i, tuple);
+    }
+    vtkCells->SetCells(tetraCount, idCells);
+
+    vtkSmartPointer<vtkFloatArray> scalar=
+          vtkSmartPointer<vtkFloatArray>::New();
+    scalar->SetNumberOfComponents(1);
+    scalar->SetNumberOfValues(count);
+    for (int i = 0; i < count; i++)
+        scalar->SetValue(i, (float)cells[i].u);
+
+    mesh->SetPoints(points);
+    mesh->SetCells(VTK_TETRA, vtkCells);
+    mesh->GetPointData()->SetScalars(scalar);
+
+    vtkUnstructuredGridWriter *tetra_writer = vtkUnstructuredGridWriter::New();
+    tetra_writer->SetFileName( snapshotFileName );
+    tetra_writer->SetFileTypeToBinary();
+
+    #if VTK_MAJOR_VERSION <= 5
+        tetra_writer->SetInput(mesh);
+    #else
+        tetra_writer->SetInputData(mesh);
+    #endif
+
+    tetra_writer->Write();
+    tetra_writer->Delete( );
+
+#endif
+}
+
+void MyHeart::SaveStateToBIN(int numberOfSnapshot)
+{
+        snprintf(snapshotFileName, 52, "%s%d.txt", "result/result", numberOfSnapshot);
+
+        FILE* writer1 = fopen(snapshotFileName, "w+");
+        if (writer1 == NULL) {
+            printf("Can't open file %s. Please create folder 'result'\n", snapshotFileName);
+            return;
+        }
+
+        for (int i = 0; i < count; i++) {
+            fprintf(writer1, "%d\n", (cells[i].u < 0) ? 0 : 1);
+        }
+
+        fclose(writer1);
+}
+
+int MyHeart::getElemNumber() {
+    return tetraCount;
+}
+int MyHeart::getNodeNumber() {
+    return count;
+}
 
 bool MyHeart::ScanHeartFromFile() {
+    mesh = new Mesh(FILE_MESH, Mesh::READ_MODE_TXT);
+    mesh->find_neighbours();
+    mesh->calc_fem_matrices();
+
     FILE *f = fopen(FILE_CELL_ALL, "rb");
-	if (f == NULL) {
-		printf(" - Can't find file %s\n", FILE_CELL_ALL);
-		return false;
-	}
+    if (f == NULL) {
+        printf(" - Can't find file %s\n", FILE_CELL_ALL);
+        return false;
+    }
 
     fscanf(f, "%i", &count);
-	cells = new Cell[count];
-	for (int i = 0; i<count; i++) {
-		cells[i].ScanCellFromFile(f);
-	}
+    cells = new Cell[count];
+    for (int i = 0; i<count; i++) {
+        cells[i].ScanCellFromFile(f);
+    }
 
-	fclose(f);
-	printf(" + Scanned file %s\n", FILE_CELL_ALL);
+    fclose(f);
+    printf(" + Scanned file %s\n", FILE_CELL_ALL);
 
-	return true;
+    // read tetrahedron
+    FILE *tetrF = fopen(FILE_TETRAHEDRON, "rb");
+    if (tetrF == NULL) {
+        printf(" - Can't find file %s\n", FILE_TETRAHEDRON);
+        return false;
+    }
+
+    int temp;
+    fscanf(tetrF, "%i", &tetraCount);
+    fscanf(tetrF, "%i %i", &temp, &temp);
+
+    tetrahedrons.resize(tetraCount);
+      for (int i = 0; i < tetraCount; ++i)
+        tetrahedrons[i].resize(4);
+
+    for (int i = 0; i < tetraCount; i++) {
+        fscanf(tetrF, "%i", &temp);
+        fscanf(tetrF, "%i", &tetrahedrons[i][0]);
+        fscanf(tetrF, "%i", &tetrahedrons[i][1]);
+        fscanf(tetrF, "%i", &tetrahedrons[i][2]);
+        fscanf(tetrF, "%i", &tetrahedrons[i][3]);
+    }
+
+    fclose(tetrF);
+    return true;
 }
 
 double MyHeart::sqrDistance(Cell a, Cell b) {
