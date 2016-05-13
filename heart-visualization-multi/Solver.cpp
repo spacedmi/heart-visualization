@@ -1,4 +1,5 @@
 #include "Solver.h"
+#include <iostream>
 #include <stdio.h>
 #include <time.h>
 #include <fstream>
