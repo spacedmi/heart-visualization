@@ -60,7 +60,7 @@ double MyHeart::Relation(Cell a) {
         res += (b.u - a.u) /** Distance(a, b) / a.R*/;
 	}
 
-    return res / 4;
+    return res / 8;
 }
 
 void MyHeart::SaveState(int numberOfSnapshot) {
@@ -124,7 +124,7 @@ void MyHeart::SaveStateToVTK(int numberOfSnapshot)
 
         for (int i = 0; i < tetraCount; i++)
         {
-            vtkIdType * tuple = new vtkIdType[4];
+            vtkIdType tuple[4];
             tuple[0] = 4;
             tuple[1] = tetrahedrons[i][0];
             tuple[2] = tetrahedrons[i][1];
@@ -158,6 +158,11 @@ void MyHeart::SaveStateToVTK(int numberOfSnapshot)
         tetra_writer->Write();
         tetra_writer->Delete( );
 
+        scalar.~vtkSmartPointerBase();
+        idCells.~vtkSmartPointerBase();
+        mesh->Delete();
+        points->Delete();
+        vtkCells->Delete();
     #endif
 }
 

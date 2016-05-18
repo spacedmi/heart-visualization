@@ -24,8 +24,8 @@ void Cell::ScanCellFromFile(FILE *f) {
     switch(odeType)
     {
     case 0:
-        a = -1.2; e = 0.01;
-        u0 = -1.2; v0 = -0.528;
+        a = -1.1; e = 0.01;
+        u0 = -1.1; v0 = -0.231;
         break;
     case 1:
         a = -0.8; e = 0.01;
